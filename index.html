@@ -127,7 +127,8 @@
                 link: 'https://apps.apple.com/jp/app/%E3%82%AF%E3%83%AA%E3%83%83%E3%83%97%E3%83%AC%E3%82%B7%E3%83%94-%E3%81%8A%E6%B0%97%E3%81%AB%E5%85%A5%E3%82%8A%E3%83%AC%E3%82%B7%E3%83%94%E4%BF%9D%E5%AD%98-%E7%AE%A1%E7%90%86/id6742833068',
                 color: 'bg-orange-50',
                 rotation: '-2deg',
-                image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop'
+                image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop',
+                video: 'assets/clip_recipe_movie.mov'
             },
             {
                 id: 'emolio',
@@ -149,7 +150,8 @@
                 link: 'https://apps.apple.com/jp/app/silua/id6752751396',
                 color: 'bg-emerald-50',
                 rotation: '-1.5deg',
-                image: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=1956&auto=format&fit=crop'
+                image: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=1956&auto=format&fit=crop',
+                video: 'assets/silua_movie.mp4'
             },
             {
                 id: 'yes-marmot',
@@ -173,9 +175,22 @@
             <!-- Scattered Cards Container -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 relative px-4">
                 <template x-for="(app, index) in apps" :key="app.id">
-                    <div x-data="{ hovered: false }"
-                         @mouseenter="hovered = true"
-                         @mouseleave="hovered = false"
+                    <div x-data="{ 
+                            hovered: false,
+                            playVideo() {
+                                if (app.video && this.$refs.video) {
+                                    this.$refs.video.play();
+                                }
+                            },
+                            pauseVideo() {
+                                if (app.video && this.$refs.video) {
+                                    this.$refs.video.pause();
+                                    this.$refs.video.currentTime = 0;
+                                }
+                            }
+                         }"
+                         @mouseenter="hovered = true; playVideo()"
+                         @mouseleave="hovered = false; pauseVideo()"
                          class="relative group transition-transform duration-500" 
                          :style="'transform: rotate(' + (hovered ? '0deg' : app.rotation) + ')'"
                          data-aos="fade-up" :data-aos-delay="index * 100">
@@ -187,15 +202,33 @@
                             <!-- Card Preview / Screen Focus Effect -->
                             <div class="aspect-[3/4] relative overflow-hidden bg-white">
                                 <!-- Default Icon View -->
-                                <div class="absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:blur-sm">
-                                    <img :src="app.icon" :alt="app.name" class="w-32 h-32 mb-6 grayscale group-hover:grayscale-0 transition-all duration-700 object-contain">
+                                <div class="absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-in-out" 
+                                     :class="hovered ? 'scale-110 blur-sm' : ''">
+                                    <img :src="app.icon" :alt="app.name" class="w-32 h-32 mb-6 transition-all duration-700 object-contain shadow-lg rounded-3xl" 
+                                         :class="hovered ? 'grayscale-0' : 'grayscale'">
                                     <h4 class="text-2xl font-bold tracking-tight" x-text="app.name"></h4>
                                     <div class="text-[10px] mt-4 uppercase tracking-[0.2em] text-gray-400 border-[0.5px] border-gray-200 px-3 py-1">TAP TO VIEW</div>
                                 </div>
                                 
                                 <!-- Screen Reveal on Hover -->
-                                <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-in-out">
-                                    <img :src="app.image" class="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-1000">
+                                <div class="absolute inset-0 transition-opacity duration-700 ease-in-out" 
+                                     :class="hovered ? 'opacity-100' : 'opacity-0'">
+                                    <!-- Video for clip-recipe, Image for others -->
+                                    <template x-if="app.video">
+                                        <video 
+                                            x-ref="video"
+                                            :src="app.video"
+                                            class="w-full h-full object-cover transition-transform duration-1000"
+                                            :class="hovered ? 'scale-100' : 'scale-110'"
+                                            muted
+                                            loop
+                                            playsinline>
+                                        </video>
+                                    </template>
+                                    <template x-if="!app.video">
+                                        <img :src="app.image" class="w-full h-full object-cover transition-transform duration-1000"
+                                             :class="hovered ? 'scale-100' : 'scale-110'">
+                                    </template>
                                     <div class="absolute inset-0 bg-black/20"></div>
                                     <div class="absolute bottom-6 left-6 right-6">
                                         <div class="text-white text-xs font-bold uppercase tracking-widest mb-1" x-text="app.name"></div>
@@ -241,9 +274,23 @@
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
 
-                    <!-- Left: Mockup / Image -->
+                    <!-- Left: Mockup / Image / Video -->
                     <div class="w-full md:w-1/2 h-64 md:h-auto bg-gray-50 overflow-hidden relative">
-                        <img :src="activeApp?.image" class="w-full h-full object-cover">
+                        <template x-if="activeApp?.video">
+                            <video 
+                                x-ref="modalVideo"
+                                x-init="$watch('activeApp', () => { if (activeApp?.video && $refs.modalVideo) { $refs.modalVideo.play(); } })"
+                                :src="activeApp?.video"
+                                class="w-full h-full object-cover"
+                                autoplay
+                                muted
+                                loop
+                                playsinline>
+                            </video>
+                        </template>
+                        <template x-if="!activeApp?.video">
+                            <img :src="activeApp?.image" class="w-full h-full object-cover">
+                        </template>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>
 
