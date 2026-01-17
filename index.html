@@ -63,6 +63,63 @@
         .nav-link:hover::after {
             width: 100%;
         }
+        @keyframes scroll-line {
+            0% { transform: scaleY(0); transform-origin: top; }
+            50% { transform: scaleY(1); transform-origin: top; }
+            51% { transform: scaleY(1); transform-origin: bottom; }
+            100% { transform: scaleY(0); transform-origin: bottom; }
+        }
+        .scroll-indicator-line {
+            animation: scroll-line 2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+        }
+
+        /* Weather Effects */
+        .weather-sunny-text {
+            color: transparent !important;
+            -webkit-text-stroke: 1px rgba(0, 0, 0, 0.05);
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 223, 0, 0.1);
+            animation: sunny-glow 4s ease-in-out infinite alternate;
+        }
+        @keyframes sunny-glow {
+            from { text-shadow: 0 0 10px rgba(255, 255, 255, 0.4), 0 0 20px rgba(255, 223, 0, 0.05); }
+            to { text-shadow: 0 0 25px rgba(255, 255, 255, 1), 0 0 40px rgba(255, 223, 0, 0.3); }
+        }
+
+        .weather-cloudy-active {
+            background: linear-gradient(to bottom, #f3f4f6, #e5e7eb) !important;
+        }
+        
+        .moyomoyo {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            filter: blur(60px);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        @keyframes move-moyomoyo {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(10%, 10%) rotate(120deg); }
+            66% { transform: translate(-5%, 15%) rotate(240deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+
+        .rain-drop {
+            position: absolute;
+            background: linear-gradient(to bottom, transparent, rgba(107, 114, 128, 0.3));
+            width: 1px;
+            height: 100px;
+            pointer-events: none;
+            z-index: 20;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            to { transform: translateY(110vh); }
+        }
+
+        .weather-rainy-active {
+            background-color: #f1f5f9 !important;
+        }
     </style>
 </head>
 <body class="hero-gradient text-gray-900 font-light">
@@ -80,9 +137,10 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="pt-48 pb-32 px-6">
-        <div class="max-w-4xl mx-auto" data-aos="fade-up">
-            <h1 class="text-5xl md:text-8xl font-bold mb-12 tracking-tighter leading-[0.9]">
+    <section id="hero" class="relative pt-48 pb-32 px-6 min-h-[90vh] flex flex-col justify-center overflow-hidden transition-colors duration-1000">
+        <div id="weather-container" class="absolute inset-0 pointer-events-none"></div>
+        <div class="max-w-4xl mx-auto w-full relative z-10" data-aos="fade-up">
+            <h1 id="hero-title" class="text-5xl md:text-8xl font-bold mb-12 tracking-tighter leading-[0.9]">
                 Crafting <span class="font-light italic">Simple</span><br>& Joyful Apps.
             </h1>
             <div class="flex space-x-6">
@@ -90,24 +148,56 @@
                 <a href="#sns" class="px-10 py-4 bg-white text-black border border-black/10 rounded-full text-sm font-medium hover:border-black transition">Contact</a>
             </div>
         </div>
+
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4" data-aos="fade-up" data-aos-delay="600">
+            <span class="text-[10px] uppercase tracking-[0.3em] text-gray-400 font-medium">Scroll</span>
+            <div class="w-[1px] h-12 bg-black/5 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full bg-black scroll-indicator-line"></div>
+            </div>
+        </div>
     </section>
 
     <!-- About Section -->
     <section id="about" class="py-32 px-6 border-t-[0.5px] border-black/5">
-        <div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-16">
-            <div class="w-56 h-56 grayscale hover:grayscale-0 transition-all duration-700 overflow-hidden border-[0.5px] border-black/10" data-aos="reveal-up">
-                <img src="assets/home_icon.png" alt="Profile" class="w-full h-full object-cover">
+        <div x-data="{
+                iconSrc: 'assets/icon_standard.png',
+                updateIcon(event) {
+                    if (!this.$refs.iconImage) return;
+                    const iconRect = this.$refs.iconImage.getBoundingClientRect();
+                    const x = event.clientX - iconRect.left;
+                    const y = event.clientY - iconRect.top;
+                    const centerX = iconRect.width / 2;
+                    const centerY = iconRect.height / 2;
+                    
+                    if (y < centerY) {
+                        this.iconSrc = 'assets/icon_up.png';
+                    } else if (x < centerX) {
+                        this.iconSrc = 'assets/icon_left.png';
+                    } else {
+                        this.iconSrc = 'assets/icon_right.png';
+                    }
+                },
+                resetIcon() {
+                    this.iconSrc = 'assets/icon_standard.png';
+                }
+            }"
+            @mousemove="updateIcon"
+            @mouseleave="resetIcon"
+            class="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-16">
+            <div class="w-56 h-56 transition-all duration-700 overflow-hidden border-[0.5px] border-black/10 rounded-xl" data-aos="reveal-up">
+                <img x-ref="iconImage" :src="iconSrc" alt="Profile" class="w-full h-full object-cover transition-opacity duration-500 ease-in-out rounded-xl shadow-lg">
             </div>
             <div data-aos="fade-up">
                 <h2 class="text-xs uppercase tracking-[0.3em] text-gray-400 mb-6">Introduction</h2>
                 <h3 class="text-3xl font-bold mb-6 tracking-tight">About Me</h3>
-                <p class="text-gray-600 leading-relaxed mb-4 text-lg">
+                <p class="text-gray-600 leading-relaxed mb-4 text-base">
                     ネイルが好きなアラサー会社員です。夫と2匹の保護猫と一緒に暮らしながら、個人開発をしています。
                 </p>
-                <p class="text-gray-600 leading-relaxed mb-4 text-lg">
+                <p class="text-gray-600 leading-relaxed mb-4 text-base">
                     かわいいUIが好きです。
                 </p>
-                <p class="text-gray-600 leading-relaxed text-lg">
+                <p class="text-gray-600 leading-relaxed text-base">
                     「自分が使いたいもの」「あったらいいな」を形にすることを大切にしています。
                 </p>
             </div>
@@ -126,7 +216,7 @@
                 description: 'URL、画像、写真撮影から材料や手順を自動取得。お気に入りのレシピをスマートに保存・管理できるアプリです。',
                 link: 'https://apps.apple.com/jp/app/%E3%82%AF%E3%83%AA%E3%83%83%E3%83%97%E3%83%AC%E3%82%B7%E3%83%94-%E3%81%8A%E6%B0%97%E3%81%AB%E5%85%A5%E3%82%8A%E3%83%AC%E3%82%B7%E3%83%94%E4%BF%9D%E5%AD%98-%E7%AE%A1%E7%90%86/id6742833068',
                 color: 'bg-orange-50',
-                rotation: '-2deg',
+                rotation: '-6deg',
                 image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop',
                 video: 'assets/clip_recipe_movie.mov'
             },
@@ -138,8 +228,9 @@
                 description: '日々の「気分」をシンプルに記録。自分の心の変化をグラフィカルに振り返ることができる気分ログアプリ。',
                 link: 'https://apps.apple.com/jp/app/emolio/id6745934802',
                 color: 'bg-purple-50',
-                rotation: '1deg',
-                image: 'https://images.unsplash.com/photo-1516339901600-af13f71797a5?q=80&w=1942&auto=format&fit=crop'
+                rotation: '5deg',
+                image: 'https://images.unsplash.com/photo-1516339901600-af13f71797a5?q=80&w=1942&auto=format&fit=crop',
+                video: 'assets/emolio_movie.mp4'
             },
             {
                 id: 'silua',
@@ -149,20 +240,21 @@
                 description: '日々の習慣や大切な瞬間を美しく。ライフスタイルを穏やかに彩るためのシンプルツール。',
                 link: 'https://apps.apple.com/jp/app/silua/id6752751396',
                 color: 'bg-emerald-50',
-                rotation: '-1.5deg',
+                rotation: '-5.5deg',
                 image: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=1956&auto=format&fit=crop',
                 video: 'assets/silua_movie.mp4'
             },
             {
                 id: 'yes-marmot',
-                name: 'Yes Marmot!',
+                name: 'Yes! Marmot',
                 emoji: '🐹',
                 icon: 'assets/yes_marmot_icon.png',
-                description: 'Marmot or Not? それはマーモットなのか、そうでないのか。シンプルで癖になるマーモット判定アプリ。',
+                description: 'Marmot or Not? それはマーモットなのか、そうでないのか。シンプルで癖になるマーモット判定ゲーム。',
                 link: 'https://apps.apple.com/jp/app/yes-marmot-marmot-or-not/id6756643136',
                 color: 'bg-amber-50',
-                rotation: '2.5deg',
-                image: 'https://images.unsplash.com/photo-1470753958051-40fa7d7e638b?q=80&w=2070&auto=format&fit=crop'
+                rotation: '7deg',
+                image: 'https://images.unsplash.com/photo-1470753958051-40fa7d7e638b?q=80&w=2070&auto=format&fit=crop',
+                video: 'assets/yes_marmot_movie.mp4'
             }
         ]
     }">
@@ -173,10 +265,12 @@
             </div>
 
             <!-- Scattered Cards Container -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 relative px-4">
+            <div class="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-12 lg:gap-x-8 lg:gap-y-16 relative px-4" style="gap: 0;">
                 <template x-for="(app, index) in apps" :key="app.id">
                     <div x-data="{ 
                             hovered: false,
+                            touchTimer: null,
+                            isLongPress: false,
                             playVideo() {
                                 if (app.video && this.$refs.video) {
                                     this.$refs.video.play();
@@ -187,27 +281,48 @@
                                     this.$refs.video.pause();
                                     this.$refs.video.currentTime = 0;
                                 }
+                            },
+                            handleTouchStart() {
+                                this.isLongPress = false;
+                                this.touchTimer = setTimeout(() => {
+                                    this.isLongPress = true;
+                                    this.hovered = true;
+                                    this.playVideo();
+                                }, 500);
+                            },
+                            handleTouchEnd() {
+                                if (this.touchTimer) {
+                                    clearTimeout(this.touchTimer);
+                                    this.touchTimer = null;
+                                }
+                                setTimeout(() => {
+                                    this.hovered = false;
+                                    this.pauseVideo();
+                                    this.isLongPress = false;
+                                }, 100);
                             }
                          }"
                          @mouseenter="hovered = true; playVideo()"
                          @mouseleave="hovered = false; pauseVideo()"
-                         class="relative group transition-transform duration-500" 
-                         :style="'transform: rotate(' + (hovered ? '0deg' : app.rotation) + ')'"
+                         @touchstart.prevent="handleTouchStart()"
+                         @touchend.prevent="handleTouchEnd()"
+                         @touchcancel.prevent="handleTouchEnd()"
+                         class="relative group transition-transform duration-500 -mr-3 -mb-4 sm:-mr-4 sm:-mb-6 lg:-mr-6 lg:-mb-8" 
+                         :style="'transform: rotate(' + (hovered ? '0deg' : app.rotation) + ') scale(' + (hovered ? '1' : '0.9') + '); z-index: ' + (hovered ? 40 : (20 - index)) + ';'"
                          data-aos="fade-up" :data-aos-delay="index * 100">
                         
                         <!-- Card -->
-                        <div @click="activeApp = app" 
-                             class="bg-white rounded-xl overflow-hidden cursor-pointer border-[0.5px] border-black/5 shadow-sm transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-2 group">
+                        <div @click="!isLongPress && (hovered = false, pauseVideo(), activeApp = app)" 
+                             class="bg-white rounded-xl overflow-hidden cursor-pointer border-[0.5px] border-black/5 shadow-md transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-2 group">
                             
                             <!-- Card Preview / Screen Focus Effect -->
                             <div class="aspect-[3/4] relative overflow-hidden bg-white">
                                 <!-- Default Icon View -->
                                 <div class="absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-in-out" 
                                      :class="hovered ? 'scale-110 blur-sm' : ''">
-                                    <img :src="app.icon" :alt="app.name" class="w-32 h-32 mb-6 transition-all duration-700 object-contain shadow-lg rounded-3xl" 
-                                         :class="hovered ? 'grayscale-0' : 'grayscale'">
-                                    <h4 class="text-2xl font-bold tracking-tight" x-text="app.name"></h4>
-                                    <div class="text-[10px] mt-4 uppercase tracking-[0.2em] text-gray-400 border-[0.5px] border-gray-200 px-3 py-1">TAP TO VIEW</div>
+                                    <img :src="app.icon" :alt="app.name" class="w-12 h-12 sm:w-20 sm:h-20 lg:w-32 lg:h-32 mb-2 sm:mb-3 lg:mb-6 transition-all duration-700 object-contain shadow-lg rounded-xl sm:rounded-2xl lg:rounded-3xl">
+                                    <h4 class="text-xs sm:text-lg lg:text-2xl font-bold tracking-tight px-1 sm:px-2 text-center" x-text="app.name"></h4>
+                                    <div class="text-[7px] sm:text-[8px] lg:text-[10px] mt-1 sm:mt-2 lg:mt-4 uppercase tracking-[0.2em] text-gray-400 border-[0.5px] border-gray-200 px-1.5 py-0.5 sm:px-2 sm:py-0.5 lg:px-3 lg:py-1">TAP TO VIEW</div>
                                 </div>
                                 
                                 <!-- Screen Reveal on Hover -->
@@ -230,17 +345,17 @@
                                              :class="hovered ? 'scale-100' : 'scale-110'">
                                     </template>
                                     <div class="absolute inset-0 bg-black/20"></div>
-                                    <div class="absolute bottom-6 left-6 right-6">
-                                        <div class="text-white text-xs font-bold uppercase tracking-widest mb-1" x-text="app.name"></div>
-                                        <div class="w-12 h-[1px] bg-white/50"></div>
+                                    <div class="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 lg:bottom-6 lg:left-6 lg:right-6">
+                                        <div class="text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1" x-text="app.name"></div>
+                                        <div class="w-8 sm:w-10 lg:w-12 h-[1px] bg-white/50"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Label below card (Subtle) -->
-                        <div class="mt-4 text-center">
-                            <span class="text-[10px] uppercase tracking-widest text-gray-300 font-medium" x-text="app.name"></span>
+                        <div class="mt-2 sm:mt-3 lg:mt-4 text-center">
+                            <span class="text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-widest text-gray-300 font-medium" x-text="app.name"></span>
                         </div>
                     </div>
                 </template>
@@ -250,6 +365,7 @@
         <!-- Expansion Modal -->
         <template x-teleport="body">
             <div x-show="activeApp" 
+                 x-effect="activeApp ? document.body.style.overflow = 'hidden' : document.body.style.overflow = ''"
                  x-transition:enter="transition ease-out duration-500"
                  x-transition:enter-start="opacity-0"
                  x-transition:enter-end="opacity-100"
@@ -297,7 +413,7 @@
                     <!-- Right: Details -->
                     <div class="w-full md:w-1/2 p-10 md:p-16 flex flex-col justify-center overflow-y-auto">
                         <div class="mb-8">
-                            <img :src="activeApp?.icon" :alt="activeApp?.name" class="w-20 h-20 mb-6 object-contain">
+                            <img :src="activeApp?.icon" :alt="activeApp?.name" class="w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 mb-6 object-contain shadow-lg rounded-2xl sm:rounded-3xl">
                             <h3 class="text-4xl md:text-5xl font-bold tracking-tighter mb-4" x-text="activeApp?.name"></h3>
                             <div class="text-[10px] uppercase tracking-[0.3em] text-gray-400 font-bold mb-8">iOS Application</div>
                             <p class="text-gray-500 text-lg leading-relaxed font-normal mb-12" x-text="activeApp?.description"></p>
@@ -345,6 +461,46 @@
             duration: 1000,
             once: true,
             offset: 100
+        });
+
+        // Weather System
+        document.addEventListener('DOMContentLoaded', () => {
+            const weathers = ['sunny', 'cloudy', 'rainy'];
+            const weather = weathers[Math.floor(Math.random() * weathers.length)];
+            const hero = document.getElementById('hero');
+            const title = document.getElementById('hero-title');
+            const container = document.getElementById('weather-container');
+
+            if (weather === 'sunny') {
+                title.classList.add('weather-sunny-text');
+            } else if (weather === 'cloudy') {
+                hero.classList.add('weather-cloudy-active');
+                // Create some "moyomoyo" clouds
+                for (let i = 0; i < 8; i++) {
+                    const cloud = document.createElement('div');
+                    cloud.className = 'moyomoyo';
+                    const size = Math.random() * 300 + 200;
+                    cloud.style.width = `${size}px`;
+                    cloud.style.height = `${size}px`;
+                    cloud.style.left = `${Math.random() * 100}%`;
+                    cloud.style.top = `${Math.random() * 100}%`;
+                    cloud.style.animation = `move-moyomoyo ${Math.random() * 10 + 20}s linear infinite`;
+                    cloud.style.animationDelay = `-${Math.random() * 20}s`;
+                    container.appendChild(cloud);
+                }
+            } else if (weather === 'rainy') {
+                hero.classList.add('weather-rainy-active');
+                // Create raindrops
+                const dropCount = 100;
+                for (let i = 0; i < dropCount; i++) {
+                    const drop = document.createElement('div');
+                    drop.className = 'rain-drop';
+                    drop.style.left = `${Math.random() * 100}%`;
+                    drop.style.animationDuration = `${Math.random() * 0.5 + 0.7}s`;
+                    drop.style.animationDelay = `${Math.random() * 2}s`;
+                    container.appendChild(drop);
+                }
+            }
         });
     </script>
 </body>
