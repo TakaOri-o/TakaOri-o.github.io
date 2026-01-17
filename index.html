@@ -75,14 +75,27 @@
 
         /* Weather Effects */
         .weather-sunny-text {
+            background: linear-gradient(
+                -45deg,
+                #00f2ff,
+                #ff00e1,
+                #ffffff,
+                #fbff00,
+                #00f2ff,
+                #ff00e1
+            );
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            background-clip: text;
             color: transparent !important;
-            -webkit-text-stroke: 1px rgba(0, 0, 0, 0.05);
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 223, 0, 0.1);
-            animation: sunny-glow 4s ease-in-out infinite alternate;
+            -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.1);
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3));
+            animation: holographic-move 8s ease infinite;
         }
-        @keyframes sunny-glow {
-            from { text-shadow: 0 0 10px rgba(255, 255, 255, 0.4), 0 0 20px rgba(255, 223, 0, 0.05); }
-            to { text-shadow: 0 0 25px rgba(255, 255, 255, 1), 0 0 40px rgba(255, 223, 0, 0.3); }
+        @keyframes holographic-move {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .weather-cloudy-active {
