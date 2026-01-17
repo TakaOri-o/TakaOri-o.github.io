@@ -102,8 +102,11 @@
             -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.2);
             filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4));
             animation: holographic-image-move 10s ease-in-out infinite alternate;
-            padding-bottom: 0.1em;
-            margin-bottom: -0.1em;
+            padding: 0.3em 0 0.5em 0;
+            margin: 0;
+            overflow: visible;
+            line-height: 1.15;
+            display: block;
         }
         @keyframes holographic-image-move {
             0% { background-position: 0% 0%; filter: hue-rotate(0deg) drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); }
@@ -163,10 +166,10 @@
     </nav>
 
     <!-- Hero Section -->
-    <section id="hero" class="relative pt-48 pb-32 px-6 min-h-[90vh] flex flex-col justify-center overflow-hidden transition-colors duration-1000">
+    <section id="hero" class="relative pt-48 pb-32 px-6 min-h-[90vh] flex flex-col justify-center transition-colors duration-1000" style="overflow-x: hidden; overflow-y: visible;">
         <div id="weather-container" class="absolute inset-0 pointer-events-none"></div>
-        <div class="max-w-4xl mx-auto w-full relative z-10" data-aos="fade-up">
-            <h1 id="hero-title" class="text-5xl md:text-8xl font-bold mb-12 tracking-tighter leading-tight md:leading-[0.9]">
+        <div class="max-w-4xl mx-auto w-full relative z-10" data-aos="fade-up" style="overflow: visible;">
+            <h1 id="hero-title" class="text-5xl md:text-8xl font-bold mb-12 tracking-tighter leading-tight md:leading-[0.9]" style="overflow: visible; padding-bottom: 0.3em;">
                 Crafting <span class="font-light italic">Simple</span><br>& Joyful Apps.
             </h1>
             <div class="flex space-x-6">
