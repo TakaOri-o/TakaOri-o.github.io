@@ -162,10 +162,12 @@
             height: 100px;
             pointer-events: none;
             z-index: 20;
+            top: -100px;
             animation: fall linear infinite;
         }
         @keyframes fall {
-            to { transform: translateY(110vh); }
+            from { transform: translateY(0); }
+            to { transform: translateY(calc(100vh + 100px)); }
         }
 
         .weather-rainy-active {
