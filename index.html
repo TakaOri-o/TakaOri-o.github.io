@@ -63,116 +63,6 @@
         .nav-link:hover::after {
             width: 100%;
         }
-        @keyframes scroll-line {
-            0% { transform: scaleY(0); transform-origin: top; }
-            50% { transform: scaleY(1); transform-origin: top; }
-            51% { transform: scaleY(1); transform-origin: bottom; }
-            100% { transform: scaleY(0); transform-origin: bottom; }
-        }
-        .scroll-indicator-line {
-            animation: scroll-line 2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-        }
-
-        /* Weather Effects */
-        .weather-sunny-active {
-            background-color: #ffffff !important;
-        }
-        .sunny-overlay {
-            position: absolute;
-            inset: 0;
-            background-image: url('assets/holo.png');
-            background-size: cover;
-            opacity: 0.05;
-            pointer-events: none;
-            z-index: 1;
-            animation: holographic-overlay-move 20s linear infinite;
-        }
-        @keyframes holographic-overlay-move {
-            from { background-position: 0% 0%; }
-            to { background-position: 100% 100%; }
-        }
-
-        .weather-sunny-text {
-            background-image: url('assets/holo.png');
-            background-size: 300% 300%;
-            background-position: center;
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent !important;
-            -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.5);
-            filter: drop-shadow(0 0 25px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 50px rgba(138, 43, 226, 0.4)) drop-shadow(0 0 75px rgba(0, 191, 255, 0.3)) drop-shadow(0 0 100px rgba(255, 20, 147, 0.2));
-            animation: holographic-shimmer 5s ease-in-out infinite;
-            padding: 0.3em 0 0.5em 0;
-            margin: 0;
-            overflow: visible;
-            line-height: 1.15;
-            display: block;
-            position: relative;
-        }
-        @keyframes holographic-shimmer {
-            0% { 
-                background-position: -200% -200%;
-                filter: hue-rotate(0deg) drop-shadow(0 0 25px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 50px rgba(138, 43, 226, 0.4)) drop-shadow(0 0 75px rgba(0, 191, 255, 0.3)) drop-shadow(0 0 100px rgba(255, 20, 147, 0.2));
-            }
-            20% { 
-                background-position: -100% -50%;
-                filter: hue-rotate(36deg) drop-shadow(0 0 35px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 60px rgba(255, 20, 147, 0.5)) drop-shadow(0 0 85px rgba(255, 215, 0, 0.4)) drop-shadow(0 0 110px rgba(0, 255, 127, 0.3));
-            }
-            40% { 
-                background-position: 0% 100%;
-                filter: hue-rotate(72deg) drop-shadow(0 0 30px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 55px rgba(0, 191, 255, 0.5)) drop-shadow(0 0 80px rgba(138, 43, 226, 0.4)) drop-shadow(0 0 105px rgba(255, 20, 147, 0.3));
-            }
-            60% { 
-                background-position: 100% 0%;
-                filter: hue-rotate(108deg) drop-shadow(0 0 35px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 60px rgba(255, 215, 0, 0.5)) drop-shadow(0 0 85px rgba(0, 255, 127, 0.4)) drop-shadow(0 0 110px rgba(255, 20, 147, 0.3));
-            }
-            80% { 
-                background-position: 200% 150%;
-                filter: hue-rotate(144deg) drop-shadow(0 0 30px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 55px rgba(138, 43, 226, 0.5)) drop-shadow(0 0 80px rgba(0, 191, 255, 0.4)) drop-shadow(0 0 105px rgba(255, 215, 0, 0.3));
-            }
-            100% { 
-                background-position: -200% -200%;
-                filter: hue-rotate(180deg) drop-shadow(0 0 25px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 50px rgba(138, 43, 226, 0.4)) drop-shadow(0 0 75px rgba(0, 191, 255, 0.3)) drop-shadow(0 0 100px rgba(255, 20, 147, 0.2));
-            }
-        }
-
-        .weather-cloudy-active {
-            background: linear-gradient(to bottom, #f3f4f6, #e5e7eb) !important;
-        }
-        
-        .moyomoyo {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.6);
-            filter: blur(60px);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 1;
-        }
-        @keyframes move-moyomoyo {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(10%, 10%) rotate(120deg); }
-            66% { transform: translate(-5%, 15%) rotate(240deg); }
-            100% { transform: translate(0, 0) rotate(360deg); }
-        }
-
-        .rain-drop {
-            position: absolute;
-            background: linear-gradient(to bottom, transparent, rgba(107, 114, 128, 0.3));
-            width: 1px;
-            height: 100px;
-            pointer-events: none;
-            z-index: 20;
-            top: -100px;
-            animation: fall linear infinite;
-        }
-        @keyframes fall {
-            from { transform: translateY(0); }
-            to { transform: translateY(calc(100vh + 100px)); }
-        }
-
-        .weather-rainy-active {
-            background-color: #f1f5f9 !important;
-        }
     </style>
 </head>
 <body class="hero-gradient text-gray-900 font-light">
@@ -191,7 +81,6 @@
 
     <!-- Hero Section -->
     <section id="hero" class="relative pt-48 pb-32 px-6 min-h-[90vh] flex flex-col justify-center transition-colors duration-1000" style="overflow-x: hidden; overflow-y: visible;">
-        <div id="weather-container" class="absolute inset-0 pointer-events-none"></div>
         <div class="max-w-4xl mx-auto w-full relative z-10" data-aos="fade-up" style="overflow: visible;">
             <h1 id="hero-title" class="text-5xl md:text-8xl font-bold mb-12 tracking-tighter leading-tight md:leading-[0.9]" style="overflow: visible; padding-bottom: 0.3em;">
                 Crafting <span class="font-light italic">Simple</span><br>& Joyful Apps.
@@ -199,14 +88,6 @@
             <div class="flex space-x-6">
                 <a href="#apps" class="px-10 py-4 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition shadow-xl shadow-black/10">View Projects</a>
                 <a href="#sns" class="px-10 py-4 bg-white text-black border border-black/10 rounded-full text-sm font-medium hover:border-black transition">Contact</a>
-            </div>
-        </div>
-
-        <!-- Scroll Indicator -->
-        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4" data-aos="fade-up" data-aos-delay="600">
-            <span class="text-[10px] uppercase tracking-[0.3em] text-gray-400 font-medium">Scroll</span>
-            <div class="w-[1px] h-12 bg-black/5 relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-full bg-black scroll-indicator-line"></div>
             </div>
         </div>
     </section>
@@ -514,52 +395,6 @@
             duration: 1000,
             once: true,
             offset: 100
-        });
-
-        // Weather System
-        document.addEventListener('DOMContentLoaded', () => {
-            const weathers = ['sunny', 'cloudy', 'rainy'];
-            const weather = weathers[Math.floor(Math.random() * weathers.length)];
-            const hero = document.getElementById('hero');
-            const title = document.getElementById('hero-title');
-            const container = document.getElementById('weather-container');
-
-            if (weather === 'sunny') {
-                hero.classList.add('weather-sunny-active');
-                title.classList.add('weather-sunny-text');
-                
-                // Add a subtle holographic overlay to the background
-                const overlay = document.createElement('div');
-                overlay.className = 'sunny-overlay';
-                container.appendChild(overlay);
-            } else if (weather === 'cloudy') {
-                hero.classList.add('weather-cloudy-active');
-                // Create some "moyomoyo" clouds
-                for (let i = 0; i < 8; i++) {
-                    const cloud = document.createElement('div');
-                    cloud.className = 'moyomoyo';
-                    const size = Math.random() * 300 + 200;
-                    cloud.style.width = `${size}px`;
-                    cloud.style.height = `${size}px`;
-                    cloud.style.left = `${Math.random() * 100}%`;
-                    cloud.style.top = `${Math.random() * 100}%`;
-                    cloud.style.animation = `move-moyomoyo ${Math.random() * 10 + 20}s linear infinite`;
-                    cloud.style.animationDelay = `-${Math.random() * 20}s`;
-                    container.appendChild(cloud);
-                }
-            } else if (weather === 'rainy') {
-                hero.classList.add('weather-rainy-active');
-                // Create raindrops
-                const dropCount = 100;
-                for (let i = 0; i < dropCount; i++) {
-                    const drop = document.createElement('div');
-                    drop.className = 'rain-drop';
-                    drop.style.left = `${Math.random() * 100}%`;
-                    drop.style.animationDuration = `${Math.random() * 0.5 + 0.7}s`;
-                    drop.style.animationDelay = `${Math.random() * 2}s`;
-                    container.appendChild(drop);
-                }
-            }
         });
     </script>
 </body>
