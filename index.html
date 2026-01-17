@@ -74,28 +74,40 @@
         }
 
         /* Weather Effects */
+        .weather-sunny-active {
+            background-color: #ffffff !important;
+        }
+        .sunny-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: url('assets/holo.png');
+            background-size: cover;
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 1;
+            animation: holographic-overlay-move 20s linear infinite;
+        }
+        @keyframes holographic-overlay-move {
+            from { background-position: 0% 0%; }
+            to { background-position: 100% 100%; }
+        }
+
         .weather-sunny-text {
-            background: linear-gradient(
-                -45deg,
-                #00f2ff,
-                #ff00e1,
-                #ffffff,
-                #fbff00,
-                #00f2ff,
-                #ff00e1
-            );
-            background-size: 400% 400%;
+            background-image: url('assets/holo.png');
+            background-size: cover;
+            background-position: center;
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent !important;
-            -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.1);
-            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3));
-            animation: holographic-move 8s ease infinite;
+            -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.2);
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4));
+            animation: holographic-image-move 10s ease-in-out infinite alternate;
+            display: inline-block;
         }
-        @keyframes holographic-move {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        @keyframes holographic-image-move {
+            0% { background-position: 0% 0%; filter: hue-rotate(0deg) drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); }
+            50% { background-position: 50% 50%; filter: hue-rotate(20deg) drop-shadow(0 0 25px rgba(255, 255, 255, 0.5)); }
+            100% { background-position: 100% 100%; filter: hue-rotate(-20deg) drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); }
         }
 
         .weather-cloudy-active {
@@ -485,7 +497,13 @@
             const container = document.getElementById('weather-container');
 
             if (weather === 'sunny') {
+                hero.classList.add('weather-sunny-active');
                 title.classList.add('weather-sunny-text');
+                
+                // Add a subtle holographic overlay to the background
+                const overlay = document.createElement('div');
+                overlay.className = 'sunny-overlay';
+                container.appendChild(overlay);
             } else if (weather === 'cloudy') {
                 hero.classList.add('weather-cloudy-active');
                 // Create some "moyomoyo" clouds
