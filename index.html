@@ -205,6 +205,7 @@
                             hovered: false,
                             touchTimer: null,
                             isLongPress: false,
+                            touchStartTime: 0,
                             playVideo() {
                                 if (app.video && this.$refs.video) {
                                     this.$refs.video.play();
@@ -218,6 +219,7 @@
                             },
                             handleTouchStart() {
                                 this.isLongPress = false;
+                                this.touchStartTime = Date.now();
                                 this.touchTimer = setTimeout(() => {
                                     this.isLongPress = true;
                                     this.hovered = true;
@@ -225,15 +227,25 @@
                                 }, 500);
                             },
                             handleTouchEnd() {
+                                const touchDuration = Date.now() - this.touchStartTime;
                                 if (this.touchTimer) {
                                     clearTimeout(this.touchTimer);
                                     this.touchTimer = null;
                                 }
-                                setTimeout(() => {
+                                
+                                // 長押しでない場合（通常のタップ）はモーダルを開く
+                                if (!this.isLongPress && touchDuration < 500) {
                                     this.hovered = false;
                                     this.pauseVideo();
-                                    this.isLongPress = false;
-                                }, 100);
+                                    activeApp = app;
+                                } else {
+                                    // 長押しの場合はホバー状態を解除
+                                    setTimeout(() => {
+                                        this.hovered = false;
+                                        this.pauseVideo();
+                                        this.isLongPress = false;
+                                    }, 100);
+                                }
                             }
                          }"
                          @mouseenter="hovered = true; playVideo()"
@@ -246,7 +258,7 @@
                          data-aos="fade-up" :data-aos-delay="index * 100">
                         
                         <!-- Card -->
-                        <div @click="!isLongPress && (hovered = false, pauseVideo(), activeApp = app)" 
+                        <div @click="hovered = false; pauseVideo(); activeApp = app" 
                              class="bg-white rounded-xl overflow-hidden cursor-pointer border-[0.5px] border-black/5 shadow-md transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-2 group">
                             
                             <!-- Card Preview / Screen Focus Effect -->
