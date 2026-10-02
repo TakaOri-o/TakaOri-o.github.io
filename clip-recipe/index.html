@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クリップレシピ — お気に入りレシピ保存・管理</title>
+    <meta name="description" content="URL、画像、写真撮影から材料や手順を自動取得。お気に入りのレシピをスマートに保存・管理できるアプリ。">
+    <meta property="og:title" content="クリップレシピ — お気に入りレシピ保存・管理">
+    <meta property="og:description" content="URL、画像、写真撮影から材料や手順を自動取得。お気に入りのレシピをスマートに保存・管理できるアプリ。">
+    <meta property="og:image" content="https://takaori-o.github.io/assets/clip_recipe_icon.png">
+    <meta property="og:url" content="https://takaori-o.github.io/clip-recipe/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="../assets/clip_recipe_icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1c1917;
+            --muted: #78716c;
+            --line: rgba(28, 25, 23, 0.08);
+            --accent: #ea580c;
+            --surface: #faf7f5;
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            font-family: 'DM Sans', 'Noto Sans JP', sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(1100px 560px at 85% -8%, rgba(234, 88, 12, 0.10), transparent 58%),
+                radial-gradient(800px 420px at -8% 18%, rgba(168, 162, 158, 0.16), transparent 55%),
+                #ffffff;
+        }
+        .display { font-family: 'DM Sans', sans-serif; letter-spacing: -0.04em; }
+        .jp { font-family: 'Noto Sans JP', 'DM Sans', sans-serif; }
+        .nav-glass {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--line);
+        }
+        /* App Store 公式バッジ（改変不可） https://developer.apple.com/app-store/marketing/guidelines/ */
+        .app-store-badge {
+            display: inline-block;
+            line-height: 0;
+            transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .app-store-badge:hover { opacity: 0.88; transform: translateY(-1px); }
+        .app-store-badge img { display: block; height: 40px; width: auto; }
+        .phone-wrap {
+            position: relative;
+            width: min(100%, 292px);
+        }
+        .phone-glow {
+            position: absolute;
+            inset: 18% -25% -5% -25%;
+            background: radial-gradient(ellipse at center, rgba(234, 88, 12, 0.2), transparent 70%);
+            filter: blur(24px);
+            z-index: -1;
+            pointer-events: none;
+        }
+        .phone {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 9 / 19.5;
+            padding: 10px;
+            border-radius: 2.6rem;
+            background: linear-gradient(155deg, #2a3038 0%, #0a0c0f 50%, #161a20 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow:
+                0 40px 80px -40px rgba(28, 25, 23, 0.5),
+                0 12px 28px -16px rgba(234, 88, 12, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.16);
+        }
+        .phone::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28%;
+            height: 12px;
+            border-radius: 999px;
+            background: #050607;
+            z-index: 4;
+        }
+        .phone::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 22%;
+            width: 3px;
+            height: 11%;
+            border-radius: 2px 0 0 2px;
+            background: #3a404a;
+            box-shadow: 0 48px 0 #3a404a, 0 92px 0 #3a404a;
+        }
+        .phone-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 2.1rem;
+            overflow: hidden;
+            background: #000;
+        }
+        .phone-screen video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .section-label { font-size: 0.7rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+        .feature-row { border-top: 1px solid var(--line); padding: 2.5rem 0; display: grid; gap: 1rem 2rem; }
+        @media (min-width: 768px) {
+            .feature-row { grid-template-columns: 2.2fr 3fr; align-items: baseline; padding: 3rem 0; }
+        }
+        .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal.is-visible { opacity: 1; transform: translateY(0); }
+        .hero-anim { animation: heroIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .hero-anim-delay { animation-delay: 0.15s; }
+        .hero-anim-delay-2 { animation-delay: 0.3s; }
+        @keyframes heroIn {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .soft-panel {
+            background:
+                linear-gradient(180deg, rgba(250, 247, 245, 0.95), rgba(255, 255, 255, 0.98)),
+                radial-gradient(600px 240px at 50% 0%, rgba(234, 88, 12, 0.08), transparent 70%);
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+        }
+        .accent { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <nav class="nav-glass fixed top-0 inset-x-0 z-50">
+        <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="#top" class="flex items-center gap-3 no-underline text-[var(--ink)]">
+                <img src="../assets/clip_recipe_icon.png" alt="" class="w-8 h-8 rounded-xl shadow-sm">
+                <span class="display text-sm font-semibold tracking-tight jp">クリップレシピ</span>
+            </a>
+            <div class="flex items-center gap-5">
+                <a href="../" class="hidden sm:inline text-xs tracking-widest uppercase text-[var(--muted)] hover:text-[var(--ink)] transition-colors no-underline">Portfolio</a>
+                <a href="https://apps.apple.com/jp/app/%E3%82%AF%E3%83%AA%E3%83%83%E3%83%97%E3%83%AC%E3%82%B7%E3%83%94-%E3%81%8A%E6%B0%97%E3%81%AB%E5%85%A5%E3%82%8A%E3%83%AC%E3%82%B7%E3%83%94%E4%BF%9D%E5%AD%98-%E7%AE%A1%E7%90%86/id6742833068" target="_blank" rel="noopener noreferrer" class="text-xs tracking-widest uppercase text-[var(--ink)] no-underline hover:opacity-70 transition-opacity">App Store</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="top">
+        <section class="relative min-h-[100svh] pt-28 pb-16 px-6 flex items-center overflow-hidden">
+            <div class="max-w-5xl mx-auto w-full grid lg:grid-cols-[1.1fr_0.9fr] gap-14 lg:gap-16 items-center">
+                <div>
+                    <div class="hero-anim flex items-center gap-3 mb-8">
+                        <img src="../assets/clip_recipe_icon.png" alt="クリップレシピ" class="w-14 h-14 rounded-2xl shadow-lg shadow-stone-900/10">
+                        <span class="section-label">iOS Application</span>
+                    </div>
+                    <h1 class="hero-anim hero-anim-delay display text-4xl sm:text-5xl md:text-6xl font-semibold leading-[1.05] mb-6 jp">
+                        クリップレシピ
+                    </h1>
+                    <p class="hero-anim hero-anim-delay display text-2xl sm:text-3xl font-light text-stone-600 mb-5 tracking-tight jp">
+                        URL/画像/テキストからワンタップ保存。
+                    </p>
+                    <p class="hero-anim hero-anim-delay-2 jp text-base text-stone-500 leading-relaxed max-w-md mb-10">
+                        お気に入りのレシピサイトやSNS、写真から材料と手順を自動取得。自分だけのレシピ帳を、シンプルに残せます。
+                    </p>
+                    <div class="hero-anim hero-anim-delay-2 flex flex-wrap gap-3">
+                        <a class="app-store-badge" href="https://apps.apple.com/jp/app/%E3%82%AF%E3%83%AA%E3%83%83%E3%83%97%E3%83%AC%E3%82%B7%E3%83%94-%E3%81%8A%E6%B0%97%E3%81%AB%E5%85%A5%E3%82%8A%E3%83%AC%E3%82%B7%E3%83%94%E4%BF%9D%E5%AD%98-%E7%AE%A1%E7%90%86/id6742833068" target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/clip-recipe/app-store-badge-ja.svg" alt="App Store からダウンロード" width="109" height="40">
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-anim hero-anim-delay-2 flex justify-center lg:justify-end">
+                    <div class="phone-wrap">
+                        <div class="phone-glow" aria-hidden="true"></div>
+                        <div class="phone">
+                            <div class="phone-screen">
+                                <video src="../assets/clip_recipe_movie.mov" autoplay muted loop playsinline webkit-playsinline poster="../assets/clip_recipe_icon.png" aria-label="クリップレシピのデモ動画"></video>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="concept" class="soft-panel py-28 px-6">
+            <div class="max-w-3xl mx-auto reveal">
+                <p class="section-label mb-8">Concept</p>
+                <h2 class="display text-3xl sm:text-5xl font-semibold leading-tight tracking-tight mb-8 jp">
+                    見つけたレシピを、<br>そのまま自分の帳面に。
+                </h2>
+                <p class="jp text-stone-500 text-base sm:text-lg leading-relaxed max-w-2xl">
+                    クリップレシピは、毎日の料理をもっとスムーズにするためのレシピ管理アプリです。散らばりがちなWebやSNSのレシピを一箇所に集め、オフラインでも安心して見返せるようにします。
+                </p>
+            </div>
+        </section>
+
+        <section id="features" class="py-28 px-6">
+            <div class="max-w-4xl mx-auto">
+                <div class="reveal mb-10">
+                    <p class="section-label mb-4">Features</p>
+                    <h2 class="display text-3xl sm:text-4xl font-semibold tracking-tight jp">保存から、探すまで。</h2>
+                </div>
+                <div class="reveal feature-row">
+                    <h3 class="display text-xl sm:text-2xl font-semibold tracking-tight jp">レシピの自動取得</h3>
+                    <p class="jp text-stone-500 leading-relaxed">URLや画像、写真から材料・手順を自動保存。手入力の手間を減らし、気になったレシピをすぐ残せます。</p>
+                </div>
+                <div class="reveal feature-row">
+                    <h3 class="display text-xl sm:text-2xl font-semibold tracking-tight jp">オフラインでも閲覧</h3>
+                    <p class="jp text-stone-500 leading-relaxed">電波のないキッチンでも手順や材料を確認可能。料理中のストレスを減らすための設計です。</p>
+                </div>
+                <div class="reveal feature-row border-b border-[var(--line)]">
+                    <h3 class="display text-xl sm:text-2xl font-semibold tracking-tight jp">整理と検索</h3>
+                    <p class="jp text-stone-500 leading-relaxed">カテゴリー・フリーワード・お気に入りで素早く検索。手動入力にも対応し、紙のレシピやオリジナルも残せます。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="highlights" class="py-28 px-6 bg-[var(--surface)]">
+            <div class="max-w-4xl mx-auto">
+                <div class="reveal mb-16">
+                    <p class="section-label mb-4">Highlights</p>
+                    <h2 class="display text-3xl sm:text-4xl font-semibold tracking-tight jp">キッチンで、使いやすく。</h2>
+                </div>
+                <div class="grid md:grid-cols-3 gap-12 md:gap-10">
+                    <div class="reveal">
+                        <p class="display text-sm font-semibold tracking-[0.2em] uppercase accent mb-4">01</p>
+                        <h3 class="display text-xl font-semibold mb-3 tracking-tight jp">URL / 画像 / 写真</h3>
+                        <p class="jp text-stone-500 text-sm leading-relaxed">サイトのURL、スクショ、撮影した写真など、手元の情報からすぐクリップ。</p>
+                    </div>
+                    <div class="reveal">
+                        <p class="display text-sm font-semibold tracking-[0.2em] uppercase accent mb-4">02</p>
+                        <h3 class="display text-xl font-semibold mb-3 tracking-tight jp">手動入力もOK</h3>
+                        <p class="jp text-stone-500 text-sm leading-relaxed">紙のメモや自分流アレンジも自由に登録。編集・削除もシンプルに。</p>
+                    </div>
+                    <div class="reveal">
+                        <p class="display text-sm font-semibold tracking-[0.2em] uppercase accent mb-4">03</p>
+                        <h3 class="display text-xl font-semibold mb-3 tracking-tight jp">お気に入り整理</h3>
+                        <p class="jp text-stone-500 text-sm leading-relaxed">よく作るレシピにすぐたどり着けるよう、お気に入りと検索で整理できます。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="for-whom" class="py-28 px-6">
+            <div class="max-w-3xl mx-auto reveal">
+                <p class="section-label mb-8">For you</p>
+                <h2 class="display text-3xl sm:text-4xl font-semibold tracking-tight mb-8 jp">
+                    レシピは、散らばりやすい。
+                </h2>
+                <p class="jp text-stone-500 text-base sm:text-lg leading-relaxed mb-6">
+                    いろいろなサイトのレシピをまとめたい人、SNSで見つけた料理をすぐ残したい人、ネットがなくてもレシピを見たい人へ。
+                </p>
+                <p class="jp text-stone-500 text-base sm:text-lg leading-relaxed">
+                    クリップレシピは、自分だけのレシピ帳をつくるための、静かで実用的な道具です。
+                </p>
+            </div>
+        </section>
+
+        <section class="py-28 px-6 soft-panel">
+            <div class="max-w-3xl mx-auto text-center reveal">
+                <img src="../assets/clip_recipe_icon.png" alt="" class="w-20 h-20 rounded-3xl mx-auto mb-8 shadow-xl shadow-stone-900/10">
+                <h2 class="display text-3xl sm:text-5xl font-semibold tracking-tight mb-5 jp">今日のひと皿を、残そう。</h2>
+                <p class="jp text-stone-500 leading-relaxed mb-10 max-w-lg mx-auto">
+                    気になったレシピを、そのまま自分のものに。クリップレシピで、毎日の料理をもっとスムーズに。
+                </p>
+                <a class="app-store-badge" href="https://apps.apple.com/jp/app/%E3%82%AF%E3%83%AA%E3%83%83%E3%83%97%E3%83%AC%E3%82%B7%E3%83%94-%E3%81%8A%E6%B0%97%E3%81%AB%E5%85%A5%E3%82%8A%E3%83%AC%E3%82%B7%E3%83%94%E4%BF%9D%E5%AD%98-%E7%AE%A1%E7%90%86/id6742833068" target="_blank" rel="noopener noreferrer">
+                    <img src="../assets/clip-recipe/app-store-badge-ja.svg" alt="App Store からダウンロード" width="109" height="40">
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="py-16 px-6 border-t border-[var(--line)]">
+        <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-stone-400">© 2026 クリップレシピ / 六日 (Muika)</p>
+            <div class="flex items-center gap-6 text-xs text-stone-400">
+                <a href="../" class="hover:text-stone-700 transition-colors no-underline text-inherit">Portfolio</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.18, rootMargin: '0px 0px -40px 0px' });
+        reveals.forEach((el) => observer.observe(el));
+    </script>
+</body>
+</html>

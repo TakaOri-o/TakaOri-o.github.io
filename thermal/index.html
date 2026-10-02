@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thermal — レシート日記</title>
+    <meta name="description" content="毎日をレシートに。歩数・睡眠・ワークアウト、今日撮った写真から「今日のレシート」をつくるアプリ。">
+    <meta property="og:title" content="Thermal — レシート日記">
+    <meta property="og:description" content="毎日をレシートに。歩数・睡眠・ワークアウト、今日撮った写真から「今日のレシート」をつくるアプリ。">
+    <meta property="og:image" content="https://takaori-o.github.io/assets/thermal_icon.png">
+    <meta property="og:url" content="https://takaori-o.github.io/thermal/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="../assets/thermal_icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500;600;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #121417;
+            --ink-soft: #2a3036;
+            --muted: #747c86;
+            --line: rgba(18, 20, 23, 0.08);
+            --line-strong: rgba(18, 20, 23, 0.14);
+            --accent: #3d434b;
+            --foam: #f3f4f6;
+            --paper: #e8eaee;
+            --ticket: #fafaf9;
+            --white: #ffffff;
+            --ease: cubic-bezier(0.22, 1, 0.36, 1);
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --nav-h: 4.25rem;
+            --page-gutter: 1.5rem;
+            --page-max: 1120px;
+            --shadow-slip: 0 18px 42px -24px rgba(12, 14, 18, 0.55), 0 2px 6px -2px rgba(12, 14, 18, 0.12);
+        }
+
+        @media (min-width: 768px) {
+            :root { --page-gutter: 2.75rem; }
+        }
+
+        @media (min-width: 1200px) {
+            :root { --page-gutter: 4rem; }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html {
+            scroll-behavior: smooth;
+            background: var(--foam);
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            color: var(--ink);
+            background: var(--foam);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        img, video { max-width: 100%; display: block; }
+        a { color: inherit; text-decoration: none; }
+        ::selection {
+            background: rgba(18, 20, 23, 0.12);
+            color: var(--ink);
+        }
+
+        .jp { font-family: 'Noto Sans JP', sans-serif; }
+        .mono {
+            font-family: 'IBM Plex Mono', ui-monospace, monospace;
+            font-feature-settings: 'ss01';
+        }
+
+        .grain {
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            opacity: 0.028;
+            mix-blend-mode: multiply;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 1.5px;
+            width: 0%;
+            z-index: 10000;
+            background: linear-gradient(90deg, #1a1c1e, #6a7380);
+            transform-origin: left center;
+        }
+
+        .wrap {
+            width: min(var(--page-max), calc(100% - (var(--page-gutter) * 2)));
+            margin-inline: auto;
+        }
+
+        .label {
+            font-family: 'IBM Plex Mono', ui-monospace, monospace;
+            font-size: 0.62rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        /* Nav */
+        .nav {
+            position: fixed;
+            top: 0;
+            inset-inline: 0;
+            z-index: 100;
+            height: var(--nav-h);
+            display: flex;
+            align-items: center;
+            transition: background 0.55s var(--ease), border-color 0.55s ease, backdrop-filter 0.55s ease;
+            border-bottom: 1px solid transparent;
+        }
+
+        .nav.is-scrolled {
+            background: rgba(243, 244, 246, 0.78);
+            backdrop-filter: blur(20px) saturate(1.2);
+            -webkit-backdrop-filter: blur(20px) saturate(1.2);
+            border-bottom-color: var(--line);
+        }
+
+        .nav-inner {
+            width: min(var(--page-max), calc(100% - (var(--page-gutter) * 2)));
+            margin-inline: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .nav-brand img {
+            width: 1.85rem;
+            height: 1.85rem;
+            border-radius: 0.5rem;
+            transition: transform 0.45s var(--ease);
+        }
+
+        .nav-brand:hover img { transform: rotate(-4deg) scale(1.04); }
+
+        .nav-brand span {
+            font-family: 'Silkscreen', monospace;
+            font-size: 0.88rem;
+            font-weight: 400;
+            letter-spacing: 0.04em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-links a.quiet {
+            font-family: 'IBM Plex Mono', ui-monospace, monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--muted);
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a.quiet:hover { color: var(--ink); }
+
+        .nav-cta {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.58rem 1.1rem;
+            border-radius: 999px;
+            background: var(--ink);
+            color: #fff;
+            font-family: 'IBM Plex Mono', ui-monospace, monospace;
+            font-size: 0.58rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            transition: transform 0.4s var(--ease), background 0.3s ease, box-shadow 0.4s ease;
+            box-shadow: 0 10px 24px -16px rgba(12, 14, 18, 0.6);
+        }
+
+        .nav-cta:hover {
+            background: var(--ink-soft);
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px -16px rgba(12, 14, 18, 0.55);
+        }
+
+        /* App Store 公式バッジ（改変不可） https://developer.apple.com/app-store/marketing/guidelines/ */
+        .app-store-badge {
+            display: inline-block;
+            line-height: 0;
+            transition: opacity 0.25s ease, transform 0.4s var(--ease);
+            will-change: transform;
+        }
+
+        .app-store-badge:hover { opacity: 0.9; }
+
+        .app-store-badge img {
+            display: block;
+            height: 42px;
+            width: auto;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 1.05s var(--ease-out), transform 1.05s var(--ease-out);
+        }
+
+        .reveal.is-in {
+            opacity: 1;
+            transform: none;
+        }
+
+        .d1 { transition-delay: 0.12s; }
+        .d2 { transition-delay: 0.22s; }
+        .d3 { transition-delay: 0.32s; }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding-top: var(--nav-h);
+            overflow: clip;
+        }
+
+        .hero-atmosphere {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 70% 55% at 85% 18%, rgba(18, 20, 23, 0.05), transparent 60%),
+                radial-gradient(ellipse 48% 40% at 8% 88%, rgba(18, 20, 23, 0.035), transparent 55%),
+                linear-gradient(165deg, #eef0f3 0%, var(--foam) 48%, #e6e8ec 100%);
+        }
+
+        .hero-atmosphere::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.35;
+            background-image:
+                linear-gradient(rgba(18, 20, 23, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(18, 20, 23, 0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse 75% 70% at 70% 40%, #000 20%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse 75% 70% at 70% 40%, #000 20%, transparent 75%);
+            pointer-events: none;
+        }
+
+        .hero-layout {
+            position: relative;
+            z-index: 2;
+            width: min(var(--page-max), calc(100% - (var(--page-gutter) * 2)));
+            margin: 0 auto;
+            display: grid;
+            gap: 1.75rem;
+            padding: 2.25rem 0 3.25rem;
+            align-items: center;
+            flex: 1;
+            will-change: opacity, transform;
+        }
+
+        @media (min-width: 960px) {
+            .hero-layout {
+                grid-template-columns: minmax(0, 0.92fr) minmax(340px, 1.08fr);
+                gap: 1.25rem;
+                padding: 2.5rem 0 4.25rem;
+            }
+        }
+
+        .hero-copy {
+            position: relative;
+            z-index: 3;
+            max-width: 30rem;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1.65rem;
+            opacity: 0;
+            animation: rise 1s var(--ease-out) 0.05s forwards;
+        }
+
+        .hero-kicker img {
+            width: 2.9rem;
+            height: 2.9rem;
+            border-radius: 0.9rem;
+            box-shadow: 0 14px 30px -14px rgba(7, 12, 18, 0.35);
+        }
+
+        .hero-title {
+            font-family: 'Silkscreen', monospace;
+            font-size: clamp(2.7rem, 7vw, 4.6rem);
+            font-weight: 400;
+            letter-spacing: 0.03em;
+            line-height: 1;
+            margin-bottom: 1rem;
+            opacity: 0;
+            animation: rise 1.15s var(--ease-out) 0.14s forwards;
+        }
+
+        .hero-lead {
+            font-size: clamp(1.05rem, 2vw, 1.35rem);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            color: var(--ink-soft);
+            margin-bottom: 0.75rem;
+            line-height: 1.45;
+            opacity: 0;
+            animation: rise 1.15s var(--ease-out) 0.26s forwards;
+        }
+
+        .hero-body {
+            font-size: 0.95rem;
+            line-height: 1.9;
+            color: var(--muted);
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+            max-width: 22rem;
+            opacity: 0;
+            animation: rise 1.15s var(--ease-out) 0.38s forwards;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.85rem;
+            opacity: 0;
+            animation: rise 1.15s var(--ease-out) 0.5s forwards;
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(32px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .hero-visual {
+            position: relative;
+            min-height: 420px;
+            opacity: 0;
+            animation: rise 1.25s var(--ease-out) 0.22s forwards;
+            overflow: hidden;
+            isolation: isolate;
+            mask-image:
+                linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%),
+                linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+            mask-composite: intersect;
+            -webkit-mask-image:
+                linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%),
+                linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+            -webkit-mask-composite: source-in;
+        }
+
+        @media (min-width: 960px) {
+            .hero-visual {
+                min-height: min(700px, calc(100svh - var(--nav-h) - 3.5rem));
+            }
+        }
+
+        .hero-flow {
+            position: absolute;
+            inset: -22% -35%;
+            display: grid;
+            place-items: center;
+            pointer-events: none;
+        }
+
+        .hero-flow-lane {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            display: flex;
+            width: max-content;
+            transform: translate(-50%, -50%) rotate(-17deg);
+        }
+
+        .hero-flow-lane.lane-a { translate: 0 -8.25rem; }
+        .hero-flow-lane.lane-b { translate: 0 8.25rem; }
+        .hero-flow-lane.lane-c {
+            translate: 0 0;
+            opacity: 0.55;
+            filter: blur(0.4px);
+            z-index: -1;
+            transform: translate(-50%, -50%) rotate(-17deg) scale(0.92);
+        }
+
+        @media (min-width: 960px) {
+            .hero-flow-lane.lane-a { translate: 0 -10rem; }
+            .hero-flow-lane.lane-b { translate: 0 10rem; }
+        }
+
+        .hero-flow-track {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.2rem;
+            width: max-content;
+            will-change: transform;
+        }
+
+        .lane-a .hero-flow-track { animation: heroFlow 38s linear infinite; }
+        .lane-b .hero-flow-track { animation: heroFlow 48s linear infinite reverse; }
+        .lane-c .hero-flow-track { animation: heroFlow 58s linear infinite; }
+
+        .hero-flow.is-paused .hero-flow-track {
+            animation-play-state: paused;
+        }
+
+        @keyframes heroFlow {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        .hero-flow-slip {
+            flex: 0 0 auto;
+            width: clamp(7.4rem, 15.5vw, 10rem);
+            height: fit-content;
+            align-self: flex-start;
+            border-radius: 0.12rem;
+            overflow: hidden;
+            line-height: 0;
+            background: transparent;
+            box-shadow: var(--shadow-slip);
+            transform: translateZ(0);
+        }
+
+        .lane-c .hero-flow-slip { width: clamp(6.4rem, 13vw, 8.5rem); }
+
+        .hero-flow-slip img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .hero-scroll {
+            position: absolute;
+            bottom: 1.15rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 4;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.55rem;
+            opacity: 0;
+            animation: rise 1s var(--ease-out) 1.15s forwards;
+            pointer-events: none;
+        }
+
+        @media (min-width: 960px) {
+            .hero-scroll { display: flex; }
+        }
+
+        .hero-scroll span {
+            font-family: 'IBM Plex Mono', ui-monospace, monospace;
+            font-size: 0.52rem;
+            letter-spacing: 0.36em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .hero-scroll i {
+            display: block;
+            width: 1px;
+            height: 2.4rem;
+            background: linear-gradient(180deg, var(--accent), transparent);
+            animation: scrollLine 2.4s ease-in-out infinite;
+            transform-origin: top;
+        }
+
+        @keyframes scrollLine {
+            0% { transform: scaleY(0.25); opacity: 0; }
+            35% { opacity: 1; }
+            100% { transform: scaleY(1); opacity: 0; }
+        }
+
+        /* Demo / Print */
+        .demo {
+            position: relative;
+            padding: clamp(4rem, 9vw, 7rem) 0;
+            background: var(--white);
+            border-top: 1px solid var(--line);
+            overflow: clip;
+        }
+
+        .demo::before {
+            content: '';
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: min(42%, 520px);
+            background:
+                radial-gradient(ellipse at 30% 40%, rgba(18, 20, 23, 0.035), transparent 65%);
+            pointer-events: none;
+        }
+
+        .demo-layout {
+            position: relative;
+            display: grid;
+            gap: 2.75rem;
+            align-items: center;
+        }
+
+        @media (min-width: 900px) {
+            .demo-layout {
+                grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.9fr);
+                gap: 4rem;
+            }
+        }
+
+        .demo-copy .label { margin-bottom: 0.15rem; }
+
+        .demo-copy h2 {
+            font-size: clamp(1.55rem, 3.4vw, 2.35rem);
+            font-weight: 600;
+            letter-spacing: -0.035em;
+            line-height: 1.28;
+            margin: 0.85rem 0 1rem;
+        }
+
+        .demo-copy > p {
+            font-size: 0.95rem;
+            line-height: 1.95;
+            color: var(--muted);
+            font-weight: 300;
+            max-width: 26rem;
+        }
+
+        .phone-wrap {
+            position: relative;
+            width: 255px;
+            max-width: min(255px, 70vw);
+            margin-inline: auto;
+            perspective: 900px;
+            animation: phoneFloat 7s ease-in-out infinite;
+        }
+
+        @media (min-width: 900px) {
+            .phone-wrap {
+                width: 292px;
+                max-width: 292px;
+                margin-inline: 0 0 auto;
+            }
+        }
+
+        .phone-glow {
+            position: absolute;
+            inset: 12% -30% -8% -30%;
+            background: radial-gradient(ellipse at center, rgba(18, 20, 23, 0.16), transparent 68%);
+            filter: blur(28px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .phone-reflect {
+            position: absolute;
+            left: 14%;
+            right: 14%;
+            bottom: -12%;
+            height: 12%;
+            background: linear-gradient(180deg, rgba(18, 20, 23, 0.1), transparent);
+            filter: blur(14px);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        .phone {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 9 / 19.5;
+            padding: 11px;
+            border-radius: 2.7rem;
+            background: linear-gradient(155deg, #30363f 0%, #090b0e 48%, #171b21 100%);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:
+                0 44px 88px -42px rgba(12, 14, 18, 0.55),
+                0 16px 32px -20px rgba(12, 14, 18, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        @keyframes phoneFloat {
+            0%, 100% { translate: 0 0; }
+            50% { translate: 0 -8px; }
+        }
+
+        .phone::before {
+            content: '';
+            position: absolute;
+            top: 17px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30%;
+            height: 12px;
+            border-radius: 999px;
+            background: #050607;
+            z-index: 4;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+        }
+
+        .phone::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 22%;
+            width: 3px;
+            height: 10%;
+            border-radius: 2px 0 0 2px;
+            background: #3a404a;
+            box-shadow: 0 46px 0 #3a404a, 0 88px 0 #3a404a;
+        }
+
+        .phone-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 2.15rem;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .phone-screen video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        /* Features */
+        .features {
+            padding: clamp(4rem, 9vw, 7rem) 0;
+            background: var(--foam);
+            border-top: 1px solid var(--line);
+        }
+
+        .section-label-row {
+            margin-bottom: 2.35rem;
+        }
+
+        .feature-grid {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(3.5rem, 8vw, 6rem);
+        }
+
+        .feature {
+            display: grid;
+            gap: 1.85rem;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .feature {
+                grid-template-columns: 1fr 1fr;
+                gap: 4rem;
+            }
+
+            .feature.reverse .feature-copy { order: 2; }
+            .feature.reverse .feature-media { order: 1; }
+        }
+
+        .feature-media {
+            position: relative;
+            display: grid;
+            place-items: center;
+            padding: clamp(1.75rem, 4vw, 2.75rem) 1rem;
+            border-radius: 1.35rem;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.2)),
+                var(--paper);
+            overflow: hidden;
+        }
+
+        .feature-media::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(18, 20, 23, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(18, 20, 23, 0.03) 1px, transparent 1px);
+            background-size: 28px 28px;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .device {
+            position: relative;
+            z-index: 1;
+            width: min(100%, 230px);
+            border-radius: 0.15rem;
+            overflow: hidden;
+            background: transparent;
+            box-shadow: var(--shadow-slip);
+            transform: translateY(28px) scale(0.985);
+            opacity: 0;
+            transition: transform 1.05s var(--ease-out), opacity 1.05s var(--ease-out), box-shadow 0.4s ease;
+        }
+
+        .feature.is-in .device {
+            transform: none;
+            opacity: 1;
+        }
+
+        .feature.is-in:hover .device {
+            box-shadow: 0 28px 50px -24px rgba(12, 14, 18, 0.45);
+            transform: translateY(-6px);
+        }
+
+        .device img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .feature-copy { max-width: 26rem; }
+
+        @media (min-width: 768px) {
+            .feature:not(.reverse) .feature-copy {
+                justify-self: end;
+                text-align: right;
+            }
+        }
+
+        .feature-index {
+            font-family: 'IBM Plex Mono', ui-monospace, monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.28em;
+            color: var(--accent);
+            margin-bottom: 0.65rem;
+            font-weight: 500;
+        }
+
+        .feature h3 {
+            font-size: clamp(1.25rem, 2.5vw, 1.7rem);
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            line-height: 1.35;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature p {
+            font-size: 0.93rem;
+            line-height: 1.95;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        /* Gallery */
+        .gallery {
+            padding: clamp(4rem, 9vw, 7rem) 0 clamp(4.5rem, 10vw, 8rem);
+            background: var(--white);
+            border-top: 1px solid var(--line);
+        }
+
+        .section-head {
+            margin-bottom: clamp(2rem, 4vw, 2.75rem);
+            max-width: 34rem;
+        }
+
+        .section-head h2 {
+            font-size: clamp(1.5rem, 3.2vw, 2.2rem);
+            font-weight: 600;
+            letter-spacing: -0.035em;
+            line-height: 1.28;
+            margin-top: 0.75rem;
+        }
+
+        .section-head p {
+            margin-top: 0.8rem;
+            font-size: 0.93rem;
+            line-height: 1.9;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.9rem 0.8rem;
+            align-items: start;
+        }
+
+        @media (min-width: 720px) {
+            .gallery-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 1.4rem 1.15rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .gallery-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 1.6rem 1.25rem;
+            }
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 0.12rem;
+            overflow: hidden;
+            background: transparent;
+            line-height: 0;
+            box-shadow: var(--shadow-slip);
+            transform: translateY(36px);
+            opacity: 0;
+            transition:
+                transform 0.95s var(--ease-out),
+                opacity 0.95s var(--ease-out),
+                box-shadow 0.4s ease;
+            transition-delay: calc(var(--i, 0) * 0.07s);
+            cursor: default;
+        }
+
+        .gallery-item.is-in {
+            transform: none;
+            opacity: 1;
+        }
+
+        .gallery-item:nth-child(even) { margin-top: 1.35rem; }
+
+        @media (min-width: 720px) {
+            .gallery-item:nth-child(3n+2) { margin-top: 2rem; }
+            .gallery-item:nth-child(even) { margin-top: 0; }
+            .gallery-item:nth-child(3n) { margin-top: 0.9rem; }
+        }
+
+        @media (min-width: 1024px) {
+            .gallery-item:nth-child(3n+2),
+            .gallery-item:nth-child(3n),
+            .gallery-item:nth-child(even) { margin-top: 0; }
+            .gallery-item:nth-child(4n+2) { margin-top: 2.25rem; }
+            .gallery-item:nth-child(4n+3) { margin-top: 0.85rem; }
+            .gallery-item:nth-child(4n+4) { margin-top: 1.65rem; }
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.7s var(--ease);
+        }
+
+        .gallery-item.is-in:hover {
+            box-shadow: 0 28px 48px -24px rgba(12, 14, 18, 0.48);
+            transform: translateY(-7px) rotate(-0.4deg);
+            z-index: 2;
+        }
+
+        .gallery-item.is-in:hover img {
+            transform: scale(1.015);
+        }
+
+        /* Final */
+        .final {
+            position: relative;
+            padding: clamp(5rem, 11vw, 8.5rem) 0;
+            text-align: center;
+            background:
+                radial-gradient(ellipse 55% 50% at 50% 42%, rgba(18, 20, 23, 0.045), transparent 68%),
+                var(--paper);
+            border-top: 1px solid var(--line);
+            overflow: clip;
+        }
+
+        .final::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 18%;
+            width: min(520px, 70vw);
+            height: 1px;
+            transform: translateX(-50%);
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(18, 20, 23, 0.18) 0 6px,
+                transparent 6px 12px
+            );
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        .final-inner {
+            position: relative;
+            z-index: 1;
+            width: min(520px, calc(100% - (var(--page-gutter) * 2)));
+            margin-inline: auto;
+        }
+
+        .final-icon {
+            width: 4.25rem;
+            height: 4.25rem;
+            border-radius: 1.15rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 18px 36px -16px rgba(12, 14, 18, 0.28);
+            transition: transform 0.5s var(--ease);
+        }
+
+        .final-inner:hover .final-icon {
+            transform: rotate(-3deg) scale(1.03);
+        }
+
+        .final-word {
+            font-family: 'Silkscreen', monospace;
+            font-size: clamp(1.35rem, 3vw, 1.75rem);
+            letter-spacing: 0.06em;
+            margin-bottom: 0.85rem;
+            color: var(--ink);
+        }
+
+        .final h2 {
+            font-size: clamp(1.75rem, 4.2vw, 2.7rem);
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            line-height: 1.2;
+            margin-bottom: 0.95rem;
+        }
+
+        .final p {
+            font-size: 0.95rem;
+            line-height: 1.9;
+            color: var(--muted);
+            font-weight: 300;
+            margin-bottom: 1.85rem;
+        }
+
+        footer {
+            padding: 2.6rem 0;
+            border-top: 1px solid var(--line);
+            background: var(--foam);
+        }
+
+        .footer-inner {
+            width: min(var(--page-max), calc(100% - (var(--page-gutter) * 2)));
+            margin-inline: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        @media (min-width: 640px) {
+            .footer-inner {
+                flex-direction: row;
+                justify-content: space-between;
+                text-align: left;
+            }
+        }
+
+        .footer-copy {
+            font-family: 'IBM Plex Mono', ui-monospace, monospace;
+            font-size: 0.58rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 1.4rem;
+        }
+
+        .footer-links a {
+            font-size: 0.8rem;
+            color: var(--muted);
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover { color: var(--ink); }
+
+        @media (max-width: 719px) {
+            .hide-sm { display: none; }
+            .hero-flow-lane.lane-c { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            .reveal, .gallery-item, .device, .phone-wrap {
+                opacity: 1 !important;
+                transform: none !important;
+                animation: none !important;
+                translate: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="progress" id="progress" aria-hidden="true"></div>
+
+    <nav class="nav" id="nav">
+        <div class="nav-inner">
+            <a href="#top" class="nav-brand">
+                <img src="../assets/thermal_icon.png" alt="">
+                <span>Thermal</span>
+            </a>
+            <div class="nav-links">
+                <a class="quiet hide-sm" href="../">Portfolio</a>
+                <a class="nav-cta" href="https://apps.apple.com/jp/app/thermal-%E3%83%AC%E3%82%B7%E3%83%BC%E3%83%88%E6%97%A5%E8%A8%98/id6792213818" target="_blank" rel="noopener noreferrer">App Store</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="top">
+        <section class="hero" aria-label="Thermal ヒーロー">
+            <div class="hero-atmosphere" aria-hidden="true"></div>
+
+            <div class="hero-layout">
+                <div class="hero-copy">
+                    <div class="hero-kicker">
+                        <img src="../assets/thermal_icon.png" alt="Thermal">
+                        <span class="label">iOS Application</span>
+                    </div>
+                    <h1 class="hero-title">Thermal</h1>
+                    <p class="hero-lead jp">毎日を、レシートに。</p>
+                    <p class="hero-body jp">
+                        歩数も写真も、印刷されたような一枚に。
+                    </p>
+                    <div class="hero-actions">
+                        <a class="app-store-badge magnetic" href="https://apps.apple.com/jp/app/thermal-%E3%83%AC%E3%82%B7%E3%83%BC%E3%83%88%E6%97%A5%E8%A8%98/id6792213818" target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/thermal/app-store-badge-ja.svg" alt="App Store からダウンロード" width="120" height="40">
+                        </a>
+                    </div>
+                </div>
+
+                <div class="hero-visual" id="hero-visual" aria-hidden="true">
+                    <div class="hero-flow" id="hero-flow">
+                        <div class="hero-flow-lane lane-c">
+                            <div class="hero-flow-track" data-hero-flow>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_08.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/ui_02.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_03.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_09.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_01.png" alt="" loading="eager" decoding="async"></div>
+                            </div>
+                        </div>
+                        <div class="hero-flow-lane lane-a">
+                            <div class="hero-flow-track" data-hero-flow>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_01.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_03.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_05.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_07.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_09.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/ui_01.png" alt="" loading="eager" decoding="async"></div>
+                            </div>
+                        </div>
+                        <div class="hero-flow-lane lane-b">
+                            <div class="hero-flow-track" data-hero-flow>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_02.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_04.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_06.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/receipt_08.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/ui_02.png" alt="" loading="eager" decoding="async"></div>
+                                <div class="hero-flow-slip"><img src="../assets/thermal/ui_03.png" alt="" loading="eager" decoding="async"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-scroll" aria-hidden="true">
+                <span>Scroll</span>
+                <i></i>
+            </div>
+        </section>
+
+        <section class="demo" id="demo">
+            <div class="wrap">
+                <div class="demo-layout">
+                    <div class="demo-copy reveal">
+                        <p class="label">Print</p>
+                        <h2 class="jp">印刷の手触りを、<br>そのままアプリに。</h2>
+                        <p class="jp">印刷や切り離しの操作感・効果音で、デジタルでも「レシート」としての体験を楽しめます。</p>
+                    </div>
+                    <div class="reveal d1">
+                        <div class="phone-wrap" data-phone>
+                            <div class="phone-glow" aria-hidden="true"></div>
+                            <div class="phone-reflect" aria-hidden="true"></div>
+                            <div class="phone">
+                                <div class="phone-screen">
+                                    <video
+                                        id="hero-demo"
+                                        src="../assets/thermal_movie.mp4"
+                                        autoplay muted loop playsinline webkit-playsinline
+                                        preload="metadata"
+                                        poster="../assets/thermal/receipt_07.png"
+                                        aria-label="Thermal のデモ動画">
+                                    </video>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features" id="features">
+            <div class="wrap">
+                <p class="label section-label-row reveal">Features</p>
+                <div class="feature-grid">
+                    <article class="feature reveal">
+                        <div class="feature-copy">
+                            <p class="feature-index">01 — Today's Receipt</p>
+                            <h3 class="jp">1日をまとめて<br>1枚のレシートに</h3>
+                            <p class="jp">歩数・睡眠・ワークアウト、今日撮った写真などから、今日の明細をレシートとして印刷します。</p>
+                        </div>
+                        <div class="feature-media">
+                            <div class="device"><img src="../assets/thermal/ui_04.png" alt="Today's Receipt の画面" loading="lazy" decoding="async"></div>
+                        </div>
+                    </article>
+                    <article class="feature reverse reveal d1">
+                        <div class="feature-copy">
+                            <p class="feature-index">02 — Themes</p>
+                            <h3 class="jp">テーマ＆シェア</h3>
+                            <p class="jp">感熱紙、ドットマトリクス、ヴィンテージなど用紙の雰囲気を切り替え。できたレシートは画像でシェアできます。</p>
+                        </div>
+                        <div class="feature-media">
+                            <div class="device"><img src="../assets/thermal/receipt_06.png" alt="テーマ違いのレシート" loading="lazy" decoding="async"></div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="gallery" id="gallery" aria-label="レシートギャラリー">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <p class="label">Receipts</p>
+                    <h2 class="jp">テーマも、用紙も、いろいろ。</h2>
+                    <p class="jp">感熱紙、チェック柄、ヴィンテージ——<br>その日の気分で、レシートの雰囲気を変えられます。</p>
+                </div>
+                <div class="gallery-grid">
+                    <figure class="gallery-item" style="--i:0"><img src="../assets/thermal/receipt_01.png" alt="ギンガム柄の Today's Receipt" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:1"><img src="../assets/thermal/receipt_02.png" alt="Activity Receipt" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:2"><img src="../assets/thermal/receipt_03.png" alt="手描きイラストの Today's Receipt" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:3"><img src="../assets/thermal/receipt_04.png" alt="オレンジの Photo Receipt" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:4"><img src="../assets/thermal/receipt_05.png" alt="パール装飾の Photo Receipt" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:5"><img src="../assets/thermal/receipt_06.png" alt="グリッド柄のレシート" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:6"><img src="../assets/thermal/receipt_07.png" alt="シンプルな Today's Receipt" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:7"><img src="../assets/thermal/receipt_08.png" alt="ブルーの Today's Receipt" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:8"><img src="../assets/thermal/receipt_09.png" alt="ピンクの Photo Receipt" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:9"><img src="../assets/thermal/ui_01.png" alt="オリーブ色の Photo Receipt" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:10"><img src="../assets/thermal/ui_02.png" alt="食べたもの日記のレシート" loading="lazy" decoding="async"></figure>
+                    <figure class="gallery-item" style="--i:11"><img src="../assets/thermal/ui_03.png" alt="カフェの Photo Receipt" loading="lazy" decoding="async"></figure>
+                </div>
+            </div>
+        </section>
+
+        <section class="final">
+            <div class="final-inner reveal">
+                <img class="final-icon" src="../assets/thermal_icon.png" alt="">
+                <p class="final-word">Thermal</p>
+                <h2 class="jp">今日1日を一枚に。</h2>
+                <p class="jp">Thermal で1日を楽しくのこそう。</p>
+                <a class="app-store-badge magnetic" href="https://apps.apple.com/jp/app/thermal-%E3%83%AC%E3%82%B7%E3%83%BC%E3%83%88%E6%97%A5%E8%A8%98/id6792213818" target="_blank" rel="noopener noreferrer">
+                    <img src="../assets/thermal/app-store-badge-ja.svg" alt="App Store からダウンロード" width="120" height="40">
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <p class="footer-copy">© 2026 Thermal / 六日 (Muika)</p>
+            <div class="footer-links">
+                <a href="../">Portfolio</a>
+                <a href="https://lead-cayenne-7c2.notion.site/Thermal-Privacy-Policy-3a16ed4e15a4805ca6dad0a4e6dc98a3" target="_blank" rel="noopener noreferrer">プライバシー</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (() => {
+            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const nav = document.getElementById('nav');
+            const progress = document.getElementById('progress');
+            const heroLayout = document.querySelector('.hero-layout');
+            const heroFlow = document.getElementById('hero-flow');
+            const heroVisual = document.getElementById('hero-visual');
+
+            let ticking = false;
+            const onScroll = () => {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(() => {
+                    const y = window.scrollY || document.documentElement.scrollTop;
+                    nav.classList.toggle('is-scrolled', y > 12);
+                    const doc = document.documentElement;
+                    const max = doc.scrollHeight - doc.clientHeight;
+                    progress.style.width = (max > 0 ? (y / max) * 100 : 0) + '%';
+
+                    if (heroLayout && !reduce) {
+                        const fade = Math.min(y / (window.innerHeight * 0.7), 1);
+                        heroLayout.style.opacity = String(1 - fade * 0.85);
+                        heroLayout.style.transform = `translate3d(0, ${fade * -36}px, 0)`;
+                    }
+                    ticking = false;
+                });
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+
+            document.querySelectorAll('[data-hero-flow]').forEach((track) => {
+                track.innerHTML += track.innerHTML;
+                if (reduce) {
+                    track.style.animation = 'none';
+                    track.style.transform = 'none';
+                }
+            });
+
+            if (heroFlow && heroVisual && 'IntersectionObserver' in window) {
+                const flowIo = new IntersectionObserver((entries) => {
+                    entries.forEach((e) => {
+                        heroFlow.classList.toggle('is-paused', !e.isIntersecting);
+                    });
+                }, { threshold: 0.05 });
+                flowIo.observe(heroVisual);
+            }
+
+            const galleryItems = document.querySelectorAll('.gallery-item');
+            galleryItems.forEach((el) => {
+                const i = Number(el.style.getPropertyValue('--i') || 0);
+                el.style.transitionDelay = `${(i % 4) * 0.07}s`;
+            });
+
+            const targets = document.querySelectorAll('.reveal, .gallery-item, .feature');
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach((e) => {
+                        if (!e.isIntersecting) return;
+                        e.target.classList.add('is-in');
+                        io.unobserve(e.target);
+                    });
+                }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+                targets.forEach((el) => io.observe(el));
+            } else {
+                targets.forEach((el) => el.classList.add('is-in'));
+            }
+
+            const heroVideo = document.getElementById('hero-demo');
+            if (heroVideo) {
+                heroVideo.muted = true;
+                const tryPlay = () => {
+                    const p = heroVideo.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                };
+                if (heroVideo.readyState >= 2) tryPlay();
+                else heroVideo.addEventListener('loadeddata', tryPlay, { once: true });
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) tryPlay();
+                });
+
+                if ('IntersectionObserver' in window) {
+                    const vIo = new IntersectionObserver((entries) => {
+                        entries.forEach((e) => {
+                            if (e.isIntersecting) tryPlay();
+                            else heroVideo.pause();
+                        });
+                    }, { threshold: 0.2 });
+                    vIo.observe(heroVideo);
+                }
+            }
+
+            if (!reduce) {
+                document.querySelectorAll('.magnetic').forEach((btn) => {
+                    let cx = 0, cy = 0, tx = 0, ty = 0, raf = 0;
+                    const tick = () => {
+                        cx += (tx - cx) * 0.18;
+                        cy += (ty - cy) * 0.18;
+                        btn.style.transform = `translate(${cx}px, ${cy}px)`;
+                        if (Math.abs(tx - cx) > 0.1 || Math.abs(ty - cy) > 0.1) {
+                            raf = requestAnimationFrame(tick);
+                        } else {
+                            raf = 0;
+                        }
+                    };
+                    btn.addEventListener('pointermove', (e) => {
+                        const r = btn.getBoundingClientRect();
+                        tx = (e.clientX - (r.left + r.width / 2)) * 0.18;
+                        ty = (e.clientY - (r.top + r.height / 2)) * 0.22;
+                        if (!raf) raf = requestAnimationFrame(tick);
+                    });
+                    btn.addEventListener('pointerleave', () => {
+                        tx = 0;
+                        ty = 0;
+                        if (!raf) raf = requestAnimationFrame(tick);
+                    });
+                });
+
+                const phone = document.querySelector('[data-phone]');
+                if (phone) {
+                    let mx = 0, my = 0, cx = 0, cy = 0;
+                    window.addEventListener('pointermove', (e) => {
+                        const r = phone.getBoundingClientRect();
+                        const inView = r.top < window.innerHeight && r.bottom > 0;
+                        if (!inView) return;
+                        mx = ((e.clientX - (r.left + r.width / 2)) / r.width) * 2;
+                        my = ((e.clientY - (r.top + r.height / 2)) / r.height) * 2;
+                    }, { passive: true });
+
+                    const tick = () => {
+                        cx += (mx - cx) * 0.06;
+                        cy += (my - cy) * 0.06;
+                        const shell = phone.querySelector('.phone');
+                        if (shell) {
+                            shell.style.transform = `translate3d(${cx * -8}px, ${cy * -6}px, 0) rotateY(${cx * 3}deg) rotateX(${cy * -2.5}deg)`;
+                        }
+                        requestAnimationFrame(tick);
+                    };
+                    requestAnimationFrame(tick);
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

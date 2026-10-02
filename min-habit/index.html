@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Min Habit — シンプルな習慣管理</title>
+    <meta name="description" content="続けやすい毎日のルーティン。習慣を登録して毎日チェックするだけの、シンプルな習慣管理アプリ。">
+    <meta property="og:title" content="Min Habit — シンプルな習慣管理">
+    <meta property="og:description" content="続けやすい毎日のルーティン。習慣を登録して毎日チェックするだけの、シンプルな習慣管理アプリ。">
+    <meta property="og:image" content="https://takaori-o.github.io/assets/min_habit_icon.png">
+    <meta property="og:url" content="https://takaori-o.github.io/min-habit/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="../assets/min_habit_icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #14181c;
+            --ink-soft: #2c343c;
+            --muted: #7a848e;
+            --line: rgba(20, 24, 28, 0.08);
+            --sky: #4aa8c7;
+            --foam: #f7f8fa;
+            --paper: #eef1f5;
+            --white: #ffffff;
+            --ease: cubic-bezier(0.22, 1, 0.36, 1);
+            --nav-h: 4.25rem;
+            --page-gutter: 1.5rem;
+            --page-max: 1080px;
+        }
+
+        @media (min-width: 768px) {
+            :root { --page-gutter: 2.75rem; }
+        }
+
+        @media (min-width: 1200px) {
+            :root { --page-gutter: 4rem; }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html {
+            scroll-behavior: smooth;
+            background: var(--foam);
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            color: var(--ink);
+            background: var(--foam);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        img, video { max-width: 100%; display: block; }
+        a { color: inherit; text-decoration: none; }
+
+        .en {
+            font-family: 'Noto Sans JP', sans-serif;
+            letter-spacing: 0.02em;
+            font-weight: 500;
+        }
+
+        .jp { font-family: 'Noto Sans JP', sans-serif; }
+
+        .grain {
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            opacity: 0.022;
+            mix-blend-mode: multiply;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 1px;
+            width: 0%;
+            z-index: 10000;
+            background: var(--sky);
+        }
+
+        .wrap {
+            width: min(var(--page-max), calc(100% - (var(--page-gutter) * 2)));
+            margin-inline: auto;
+        }
+
+        .label {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        /* Nav */
+        .nav {
+            position: fixed;
+            top: 0;
+            inset-inline: 0;
+            z-index: 100;
+            height: var(--nav-h);
+            display: flex;
+            align-items: center;
+            transition: background 0.5s var(--ease), border-color 0.5s ease, backdrop-filter 0.5s ease;
+            border-bottom: 1px solid transparent;
+        }
+
+        .nav.is-scrolled {
+            background: rgba(247, 248, 250, 0.8);
+            backdrop-filter: blur(18px) saturate(1.15);
+            -webkit-backdrop-filter: blur(18px) saturate(1.15);
+            border-bottom-color: var(--line);
+        }
+
+        .nav-inner {
+            width: min(var(--page-max), calc(100% - (var(--page-gutter) * 2)));
+            margin-inline: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .nav-brand img {
+            width: 1.85rem;
+            height: 1.85rem;
+            border-radius: 0.5rem;
+        }
+
+        .nav-brand span {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.4rem;
+        }
+
+        .nav-links a.quiet {
+            font-size: 0.62rem;
+            letter-spacing: 0.26em;
+            text-transform: uppercase;
+            color: var(--muted);
+            transition: color 0.25s ease;
+        }
+
+        .nav-links a.quiet:hover { color: var(--ink); }
+
+        .nav-cta {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.55rem 1.05rem;
+            border-radius: 999px;
+            background: var(--ink);
+            color: #fff;
+            font-size: 0.62rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            transition: transform 0.35s var(--ease), background 0.25s ease;
+        }
+
+        .nav-cta:hover {
+            background: var(--ink-soft);
+            transform: translateY(-1px);
+        }
+
+        /* App Store 公式バッジ（改変不可） https://developer.apple.com/app-store/marketing/guidelines/ */
+        .app-store-badge {
+            display: inline-block;
+            line-height: 0;
+            transition: opacity 0.25s ease, transform 0.35s var(--ease);
+            will-change: transform;
+        }
+
+        .app-store-badge:hover {
+            opacity: 0.88;
+            transform: translateY(-1px);
+        }
+
+        .app-store-badge img {
+            display: block;
+            height: 40px;
+            width: auto;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(36px);
+            transition: opacity 1s var(--ease), transform 1s var(--ease);
+        }
+
+        .reveal.is-in {
+            opacity: 1;
+            transform: none;
+        }
+
+        .d1 { transition-delay: 0.1s; }
+        .d2 { transition-delay: 0.2s; }
+        .d3 { transition-delay: 0.3s; }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding-top: var(--nav-h);
+            overflow: clip;
+        }
+
+        .hero-atmosphere {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 70% 55% at 78% 18%, rgba(74, 168, 199, 0.14), transparent 58%),
+                radial-gradient(ellipse 50% 40% at 15% 88%, rgba(74, 168, 199, 0.08), transparent 55%),
+                linear-gradient(180deg, #f4f6f8 0%, var(--foam) 55%, #eef1f4 100%);
+        }
+
+        .hero-layout {
+            position: relative;
+            z-index: 2;
+            width: min(var(--page-max), calc(100% - (var(--page-gutter) * 2)));
+            margin: 0 auto;
+            display: grid;
+            gap: 2.5rem;
+            padding: 2rem 0 3.5rem;
+            align-items: center;
+            flex: 1;
+            will-change: opacity, transform;
+        }
+
+        @media (min-width: 960px) {
+            .hero-layout {
+                grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.9fr);
+                gap: 2rem;
+                padding: 2rem 0 4.5rem;
+            }
+        }
+
+        .hero-copy { max-width: 34rem; }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            animation: rise 1s var(--ease) 0.05s forwards;
+        }
+
+        .hero-kicker img {
+            width: 2.85rem;
+            height: 2.85rem;
+            border-radius: 0.85rem;
+            box-shadow: 0 12px 28px -12px rgba(7, 20, 24, 0.28);
+        }
+
+        .hero-title {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: clamp(2.1rem, 5vw, 3.4rem);
+            font-weight: 600;
+            letter-spacing: -0.035em;
+            line-height: 1.05;
+            margin-bottom: 0.85rem;
+            opacity: 0;
+            animation: rise 1.1s var(--ease) 0.16s forwards;
+        }
+
+        .hero-lead {
+            font-size: clamp(1rem, 1.8vw, 1.25rem);
+            font-weight: 500;
+            letter-spacing: -0.015em;
+            color: var(--ink-soft);
+            margin-bottom: 0.85rem;
+            line-height: 1.5;
+            opacity: 0;
+            animation: rise 1.1s var(--ease) 0.28s forwards;
+        }
+
+        .hero-body {
+            font-size: 0.95rem;
+            line-height: 1.95;
+            color: var(--muted);
+            font-weight: 300;
+            margin-bottom: 1.15rem;
+            opacity: 0;
+            animation: rise 1.1s var(--ease) 0.4s forwards;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            opacity: 0;
+            animation: rise 1.1s var(--ease) 0.54s forwards;
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(28px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .hero-visual {
+            position: relative;
+            min-height: 420px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            animation: rise 1.2s var(--ease) 0.32s forwards;
+        }
+
+        @media (min-width: 960px) {
+            .hero-visual {
+                min-height: min(640px, calc(100svh - var(--nav-h) - 5rem));
+                justify-content: flex-end;
+            }
+        }
+
+        .phone-wrap {
+            position: relative;
+            z-index: 3;
+            width: 270px;
+            max-width: min(270px, 70vw);
+            will-change: transform;
+        }
+
+        @media (min-width: 960px) {
+            .phone-wrap {
+                width: 292px;
+                max-width: 292px;
+            }
+        }
+
+        .phone-glow {
+            position: absolute;
+            inset: 18% -25% -5% -25%;
+            background: radial-gradient(ellipse at center, rgba(74, 168, 199, 0.2), transparent 70%);
+            filter: blur(24px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .phone-reflect {
+            position: absolute;
+            left: 12%;
+            right: 12%;
+            bottom: -14%;
+            height: 14%;
+            background: linear-gradient(180deg, rgba(18, 26, 28, 0.08), transparent);
+            filter: blur(12px);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .phone {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 9 / 19.5;
+            padding: 10px;
+            border-radius: 2.6rem;
+            background: linear-gradient(155deg, #2a3038 0%, #0a0c0f 50%, #161a20 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow:
+                0 40px 80px -40px rgba(18, 26, 28, 0.45),
+                0 12px 28px -16px rgba(74, 168, 199, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.16);
+        }
+
+        .phone::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28%;
+            height: 12px;
+            border-radius: 999px;
+            background: #050607;
+            z-index: 4;
+        }
+
+        .phone::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 22%;
+            width: 3px;
+            height: 11%;
+            border-radius: 2px 0 0 2px;
+            background: #3a404a;
+            box-shadow: 0 48px 0 #3a404a, 0 92px 0 #3a404a;
+        }
+
+        .phone-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 2.1rem;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .phone-screen video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            object-fit: cover;
+            object-position: center;
+            transform: scale(1.14);
+        }
+
+        .hero-scroll {
+            position: absolute;
+            bottom: 1.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 4;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0;
+            animation: rise 1s var(--ease) 1.1s forwards;
+            pointer-events: none;
+        }
+
+        @media (min-width: 960px) {
+            .hero-scroll { display: flex; }
+        }
+
+        .hero-scroll span {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.55rem;
+            letter-spacing: 0.34em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .hero-scroll i {
+            display: block;
+            width: 1px;
+            height: 2.2rem;
+            background: linear-gradient(180deg, var(--sky), transparent);
+            animation: scrollLine 2.2s ease-in-out infinite;
+            transform-origin: top;
+        }
+
+        @keyframes scrollLine {
+            0% { transform: scaleY(0.3); opacity: 0; }
+            40% { opacity: 1; }
+            100% { transform: scaleY(1); opacity: 0; }
+        }
+
+        /* Habit stream — 円アイコン付きカードが流れる */
+        .habit-stream {
+            position: relative;
+            z-index: 2;
+            border-block: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.72);
+            overflow: hidden;
+            padding: 1.35rem 0;
+        }
+
+        .habit-stream::before,
+        .habit-stream::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: clamp(2rem, 8vw, 5rem);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .habit-stream::before {
+            left: 0;
+            background: linear-gradient(90deg, rgba(247, 248, 250, 0.98), transparent);
+        }
+
+        .habit-stream::after {
+            right: 0;
+            background: linear-gradient(270deg, rgba(247, 248, 250, 0.98), transparent);
+        }
+
+        .habit-stream-track {
+            display: flex;
+            width: max-content;
+            gap: 0.85rem;
+            padding-inline: 1.25rem;
+            animation: habitStream 42s linear infinite;
+        }
+
+        .habit-stream:hover .habit-stream-track {
+            animation-play-state: paused;
+        }
+
+        @keyframes habitStream {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        .stream-card {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            width: 6.4rem;
+            height: 6.4rem;
+            padding: 0.7rem 0.5rem;
+            border-radius: 1.05rem;
+            background: #ffffff;
+            box-shadow: 0 8px 22px -16px rgba(18, 26, 28, 0.22);
+            color: #aeb6bf;
+        }
+
+        .stream-card .stream-orb {
+            width: 2.55rem;
+            height: 2.55rem;
+            border-radius: 50%;
+            background: #f2f5f8;
+            display: grid;
+            place-items: center;
+        }
+
+        .stream-card .stream-orb svg {
+            width: 52%;
+            height: 52%;
+            display: block;
+        }
+
+        .stream-card .stream-label {
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            color: #5c6570;
+            line-height: 1.25;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .stream-card.is-done {
+            color: #5bb8d4;
+        }
+
+        .stream-card.is-done .stream-orb {
+            background: rgba(91, 184, 212, 0.28);
+        }
+
+        .stream-card.is-done-peach {
+            color: #e89ab0;
+        }
+
+        .stream-card.is-done-peach .stream-orb {
+            background: rgba(232, 154, 176, 0.28);
+        }
+
+        .stream-card.is-done-sage {
+            color: #7cba9a;
+        }
+
+        .stream-card.is-done-sage .stream-orb {
+            background: rgba(124, 186, 154, 0.28);
+        }
+
+        /* Try a Tap */
+        .try-tap {
+            padding: clamp(3.5rem, 8vw, 6rem) 0;
+            background: var(--foam);
+            border-top: 1px solid var(--line);
+        }
+
+        .try-tap-head {
+            max-width: 36rem;
+            margin-bottom: 2rem;
+        }
+
+        .try-tap-head h2 {
+            font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            line-height: 1.35;
+            margin: 0.7rem 0 0.65rem;
+        }
+
+        .try-tap-head p {
+            font-size: 0.9rem;
+            line-height: 1.85;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        .tap-board {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.9rem;
+            width: min(34rem, 100%);
+            margin-inline: auto;
+        }
+
+        @media (max-width: 560px) {
+            .tap-board {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: min(22rem, 100%);
+            }
+
+            .tap-board .tap-card:last-child {
+                grid-column: 1 / -1;
+                width: calc(50% - 0.45rem);
+                justify-self: center;
+            }
+        }
+
+        .tap-card {
+            position: relative;
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            padding: 1rem 0.75rem;
+            border: none;
+            border-radius: 1.15rem;
+            background: var(--white);
+            box-shadow: 0 10px 28px -18px rgba(18, 26, 28, 0.28);
+            cursor: pointer;
+            color: var(--ink);
+            font-family: inherit;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+            overflow: hidden;
+        }
+
+        .tap-card:hover:not(.is-done) {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 32px -18px rgba(18, 26, 28, 0.32);
+        }
+
+        .tap-card:active:not(.is-done) {
+            transform: scale(0.97);
+        }
+
+        .tap-card .tap-orb {
+            position: relative;
+            width: clamp(3.4rem, 12vw, 4.4rem);
+            height: clamp(3.4rem, 12vw, 4.4rem);
+            border-radius: 50%;
+            background: #e9edf2;
+            display: grid;
+            place-items: center;
+            color: #8a939d;
+            overflow: hidden;
+            transition: background 0.45s var(--ease), color 0.45s var(--ease), transform 0.45s var(--ease);
+        }
+
+        .tap-card .tap-orb svg {
+            width: 46%;
+            height: 46%;
+            display: block;
+        }
+
+        .tap-card .tap-orb::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(91, 184, 212, 0.4);
+            opacity: 0;
+            transform: scale(0.85);
+            pointer-events: none;
+        }
+
+        .tap-card:not(.is-done) .tap-orb::after {
+            animation: tapPulse 2.2s var(--ease) infinite;
+        }
+
+        @keyframes tapPulse {
+            0%, 100% { opacity: 0; transform: scale(0.85); }
+            45% { opacity: 0.7; transform: scale(1.05); }
+            70% { opacity: 0; transform: scale(1.18); }
+        }
+
+        .tap-card .tap-label {
+            font-size: clamp(0.72rem, 2.2vw, 0.82rem);
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            line-height: 1.35;
+            text-align: center;
+        }
+
+        .tap-card .tap-hint {
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            color: var(--muted);
+            transition: color 0.35s ease, transform 0.35s var(--ease), opacity 0.35s ease;
+        }
+
+        .tap-card.is-done {
+            cursor: default;
+            transform: none;
+        }
+
+        .tap-card.is-done .tap-orb {
+            transform: scale(1.06);
+        }
+
+        .tap-card.is-done .tap-hint {
+            transform: scale(1.04);
+        }
+
+        .tap-card[data-done-tone="sky"].is-done {
+            box-shadow: 0 12px 28px -16px rgba(91, 184, 212, 0.4);
+        }
+
+        .tap-card[data-done-tone="sky"].is-done .tap-orb {
+            background: rgba(91, 184, 212, 0.28);
+            color: #5bb8d4;
+        }
+
+        .tap-card[data-done-tone="sky"].is-done .tap-hint {
+            color: #5bb8d4;
+        }
+
+        .tap-card[data-done-tone="peach"].is-done {
+            box-shadow: 0 12px 28px -16px rgba(232, 154, 176, 0.4);
+        }
+
+        .tap-card[data-done-tone="peach"].is-done .tap-orb {
+            background: rgba(232, 154, 176, 0.28);
+            color: #e89ab0;
+        }
+
+        .tap-card[data-done-tone="peach"].is-done .tap-hint {
+            color: #e89ab0;
+        }
+
+        .tap-card[data-done-tone="sage"].is-done {
+            box-shadow: 0 12px 28px -16px rgba(124, 186, 154, 0.4);
+        }
+
+        .tap-card[data-done-tone="sage"].is-done .tap-orb {
+            background: rgba(124, 186, 154, 0.28);
+            color: #7cba9a;
+        }
+
+        .tap-card[data-done-tone="sage"].is-done .tap-hint {
+            color: #7cba9a;
+        }
+
+        .tap-card.is-pop .tap-orb {
+            animation: tapPop 0.55s var(--ease);
+        }
+
+        @keyframes tapPop {
+            0% { transform: scale(1); }
+            35% { transform: scale(0.88); }
+            70% { transform: scale(1.12); }
+            100% { transform: scale(1.06); }
+        }
+
+        .tap-ripple {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(91, 184, 212, 0.35);
+            pointer-events: none;
+            transform: translate(-50%, -50%) scale(0);
+            animation: tapRipple 0.7s var(--ease) forwards;
+        }
+
+        .tap-card[data-done-tone="peach"] .tap-ripple {
+            background: rgba(232, 154, 176, 0.35);
+        }
+
+        .tap-card[data-done-tone="sage"] .tap-ripple {
+            background: rgba(124, 186, 154, 0.35);
+        }
+
+        @keyframes tapRipple {
+            to {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(18);
+            }
+        }
+
+        .try-tap-note {
+            margin-top: 1.25rem;
+            font-size: 0.78rem;
+            color: var(--muted);
+            font-weight: 300;
+            min-height: 1.4em;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+        }
+
+        .try-tap-note.is-show {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* Features */
+        .features {
+            padding: clamp(3.5rem, 8vw, 6rem) 0;
+            background: var(--white);
+            border-top: 1px solid var(--line);
+        }
+
+        .section-label-row {
+            margin-bottom: 2rem;
+        }
+
+        .feature-grid {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(3rem, 7vw, 5rem);
+        }
+
+        .feature {
+            position: relative;
+            display: grid;
+            gap: 1.75rem;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .feature {
+                grid-template-columns: 1fr 1fr;
+                gap: 3.5rem;
+            }
+
+            .feature.reverse .feature-copy { order: 2; }
+            .feature.reverse .feature-media { order: 1; }
+        }
+
+        .feature-media {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            place-items: center;
+            padding: 1.75rem 1rem;
+            border-radius: 1.25rem;
+            background: var(--paper);
+        }
+
+        .device {
+            width: min(100%, 220px);
+            aspect-ratio: 9 / 19.5;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            background: #f2f4f6;
+            box-shadow: 0 20px 36px -24px rgba(18, 26, 28, 0.28);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 1s var(--ease), opacity 1s var(--ease), box-shadow 0.35s ease;
+        }
+
+        .feature.is-in .device {
+            transform: none;
+            opacity: 1;
+        }
+
+        .feature.is-in:hover .device {
+            box-shadow: 0 28px 44px -24px rgba(18, 26, 28, 0.36);
+            transform: translateY(-4px);
+        }
+
+        .device img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .feature-copy {
+            position: relative;
+            z-index: 1;
+            max-width: 26rem;
+        }
+
+        @media (min-width: 768px) {
+            .feature:not(.reverse) .feature-copy {
+                justify-self: end;
+                text-align: right;
+            }
+        }
+
+        .feature-index {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.62rem;
+            letter-spacing: 0.26em;
+            color: var(--sky);
+            margin-bottom: 0.55rem;
+            font-weight: 600;
+        }
+
+        .feature h3 {
+            font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            line-height: 1.35;
+            margin-bottom: 0.65rem;
+        }
+
+        .feature p {
+            font-size: 0.92rem;
+            line-height: 1.9;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        /* Highlights */
+        .moments {
+            padding: clamp(3.5rem, 8vw, 6rem) 0;
+            background: var(--white);
+        }
+
+        .moment-grid {
+            display: grid;
+            gap: 2.75rem 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .moment-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2.75rem;
+            }
+        }
+
+        .moment {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .moment-visual {
+            position: relative;
+            border-radius: 1.1rem;
+            overflow: hidden;
+            background: var(--paper);
+            aspect-ratio: 1 / 1;
+        }
+
+        .moment-visual .promo {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            object-fit: cover;
+            object-position: center 82%;
+            transform: scale(1.1) translateY(16px);
+            transform-origin: center bottom;
+            opacity: 0;
+            transition: transform 1s var(--ease), opacity 1s var(--ease);
+        }
+
+        .moment.is-in .moment-visual .promo {
+            transform: scale(1.1) translateY(0);
+            opacity: 1;
+        }
+
+        .moment-visual .promo.crop-widget { object-position: center 52%; }
+        .moment-visual .promo.crop-rhythm { object-position: center 78%; }
+        .moment-visual .promo.crop-personal { object-position: center 80%; }
+
+        .moment-index {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.62rem;
+            letter-spacing: 0.26em;
+            color: var(--sky);
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        .moment h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            line-height: 1.4;
+            margin-bottom: 0.4rem;
+        }
+
+        .moment p {
+            font-size: 0.85rem;
+            line-height: 1.8;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        /* Reviews */
+        .reviews {
+            padding: clamp(3.5rem, 8vw, 6rem) 0;
+            background: var(--paper);
+            border-top: 1px solid var(--line);
+        }
+
+        .reviews-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .reviews-score {
+            display: flex;
+            align-items: baseline;
+            gap: 0.65rem;
+        }
+
+        .reviews-score strong {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.04em;
+            line-height: 1;
+        }
+
+        .reviews-score span {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        .review-grid {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        @media (min-width: 768px) {
+            .review-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1.35rem;
+            }
+        }
+
+        .review {
+            padding: 1.4rem 1.35rem 1.5rem;
+            border-radius: 1rem;
+            background: var(--white);
+            border: 1px solid var(--line);
+        }
+
+        .review-stars {
+            display: flex;
+            gap: 0.15rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .review-stars svg {
+            width: 0.85rem;
+            height: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .review-stars svg.is-full {
+            fill: #f5b301;
+        }
+
+        .review-stars svg.is-empty {
+            fill: #d9dde3;
+        }
+
+        .review h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.65rem;
+            line-height: 1.4;
+        }
+
+        .review p {
+            font-size: 0.84rem;
+            line-height: 1.85;
+            color: var(--muted);
+            font-weight: 300;
+        }
+
+        .reviews-note {
+            margin-top: 1.25rem;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+
+        /* Final */
+        .final {
+            position: relative;
+            padding: clamp(4.5rem, 10vw, 7.5rem) 0;
+            text-align: center;
+            background:
+                radial-gradient(ellipse 60% 55% at 50% 40%, rgba(74, 168, 199, 0.1), transparent 65%),
+                var(--paper);
+            border-top: 1px solid var(--line);
+        }
+
+        .final-inner {
+            position: relative;
+            z-index: 1;
+            width: min(520px, calc(100% - (var(--page-gutter) * 2)));
+            margin-inline: auto;
+        }
+
+        .final-icon {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 1.1rem;
+            margin: 0 auto 1.35rem;
+            box-shadow: 0 16px 32px -14px rgba(18, 26, 28, 0.22);
+        }
+
+        .final h2 {
+            font-size: clamp(2.1rem, 5vw, 3.2rem);
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            line-height: 1.15;
+            margin-bottom: 0.9rem;
+        }
+
+        .final p {
+            font-size: 0.95rem;
+            line-height: 1.9;
+            color: var(--muted);
+            font-weight: 300;
+            margin-bottom: 1.75rem;
+        }
+
+        footer {
+            padding: 2.5rem 0;
+            border-top: 1px solid var(--line);
+            background: var(--foam);
+        }
+
+        .footer-inner {
+            width: min(var(--page-max), calc(100% - (var(--page-gutter) * 2)));
+            margin-inline: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        @media (min-width: 640px) {
+            .footer-inner {
+                flex-direction: row;
+                justify-content: space-between;
+                text-align: left;
+            }
+        }
+
+        .footer-copy {
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 1.35rem;
+        }
+
+        .footer-links a {
+            font-size: 0.8rem;
+            color: var(--muted);
+            transition: color 0.25s ease;
+        }
+
+        .footer-links a:hover { color: var(--ink); }
+
+        @media (max-width: 719px) {
+            .hide-sm { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            .reveal, .device, .moment-visual .promo {
+                opacity: 1 !important;
+                transform: none !important;
+            }
+            .moment.is-in .moment-visual .promo {
+                transform: scale(1.1) !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="progress" id="progress" aria-hidden="true"></div>
+
+    <nav class="nav" id="nav">
+        <div class="nav-inner">
+            <a href="#top" class="nav-brand">
+                <img src="../assets/min_habit_icon.png" alt="">
+                <span>Min Habit</span>
+            </a>
+            <div class="nav-links">
+                <a class="quiet hide-sm" href="../">Portfolio</a>
+                <a class="nav-cta" href="https://apps.apple.com/jp/app/min-habit-%E3%82%B7%E3%83%B3%E3%83%97%E3%83%AB%E3%81%AA%E7%BF%92%E6%85%A3%E7%AE%A1%E7%90%86/id6757673148" target="_blank" rel="noopener noreferrer">App Store</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="top">
+        <section class="hero" aria-label="Min Habit ヒーロー">
+            <div class="hero-atmosphere" aria-hidden="true"></div>
+
+            <div class="hero-layout">
+                <div class="hero-copy">
+                    <div class="hero-kicker">
+                        <img src="../assets/min_habit_icon.png" alt="Min Habit">
+                        <span class="label">iOS Application</span>
+                    </div>
+                    <h1 class="hero-title">Min Habit</h1>
+                    <p class="hero-lead jp">続けやすい毎日のルーティン。</p>
+                    <p class="hero-body jp">
+                        習慣を登録して、毎日タップするだけ。<br>
+                        積み重ねを実感できる、最小の習慣管理アプリです。
+                    </p>
+                    <div class="hero-actions">
+                        <a class="app-store-badge magnetic" href="https://apps.apple.com/jp/app/min-habit-%E3%82%B7%E3%83%B3%E3%83%97%E3%83%AB%E3%81%AA%E7%BF%92%E6%85%A3%E7%AE%A1%E7%90%86/id6757673148" target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/min-habit/app-store-badge-ja.svg" alt="App Store からダウンロード" width="109" height="40">
+                        </a>
+                    </div>
+                </div>
+
+                <div class="hero-visual" data-stage>
+                    <div class="phone-wrap">
+                        <div class="phone-glow" aria-hidden="true"></div>
+                        <div class="phone-reflect" aria-hidden="true"></div>
+                        <div class="phone">
+                            <div class="phone-screen">
+                                <video
+                                    id="hero-demo"
+                                    src="../assets/min_habit_movie.mp4"
+                                    autoplay muted loop playsinline webkit-playsinline
+                                    preload="auto"
+                                    poster="../assets/min-habit/ui_01_crop.jpg"
+                                    aria-label="Min Habit のデモ動画">
+                                </video>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-scroll" aria-hidden="true">
+                <span>Scroll</span>
+                <i></i>
+            </div>
+        </section>
+
+        <div class="habit-stream" aria-hidden="true">
+            <div class="habit-stream-track" id="habit-stream-track">
+                <div class="stream-card">
+                    <span class="stream-orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l1.5 -3"/><path d="M17 20l-1 -5h-5l1 -7"/><path d="M4 10l4 -1l4 -1l4 1.5l4 1.5"/><path d="M10.007 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/></svg></span>
+                    <span class="stream-label jp">ストレッチする</span>
+                </div>
+                <div class="stream-card is-done">
+                    <span class="stream-orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15h10v4a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2v-4"/><path d="M12 9a6 6 0 0 0 -6 -6h-3v2a6 6 0 0 0 6 6h3"/><path d="M12 11a6 6 0 0 1 6 -6h3v1a6 6 0 0 1 -6 6h-3"/><path d="M12 15l0 -6"/></svg></span>
+                    <span class="stream-label jp">植物に水やり</span>
+                </div>
+                <div class="stream-card">
+                    <span class="stream-orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/></svg></span>
+                    <span class="stream-label jp">本を1ページ</span>
+                </div>
+                <div class="stream-card">
+                    <span class="stream-orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.502 19.423c2.602 2.105 6.395 2.105 8.996 0c2.602 -2.105 3.262 -5.708 1.566 -8.546l-4.89 -7.26c-.42 -.625 -1.287 -.803 -1.936 -.397a1.376 1.376 0 0 0 -.41 .397l-4.893 7.26c-1.695 2.838 -1.035 6.441 1.567 8.546"/></svg></span>
+                    <span class="stream-label jp">水を飲む</span>
+                </div>
+                <div class="stream-card is-done-peach">
+                    <span class="stream-orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M7 21l3 -4"/><path d="M16 21l-2 -4l-3 -3l1 -6"/><path d="M6 12l2 -3l4 -1l3 3l3 1"/></svg></span>
+                    <span class="stream-label jp">5分歩く</span>
+                </div>
+                <div class="stream-card">
+                    <span class="stream-orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-11a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1m3 0v18"/><path d="M13 8l2 0"/><path d="M13 12l2 0"/></svg></span>
+                    <span class="stream-label jp">日記を書く</span>
+                </div>
+                <div class="stream-card">
+                    <span class="stream-orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h8.5a2.5 2.5 0 1 0 -2.34 -3.24"/><path d="M3 12h15.5a2.5 2.5 0 1 1 -2.34 3.24"/><path d="M4 16h5.5a2.5 2.5 0 1 1 -2.34 3.24"/></svg></span>
+                    <span class="stream-label jp">深呼吸する</span>
+                </div>
+                <div class="stream-card is-done-sage">
+                    <span class="stream-orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M22 17v-3h-20"/><path d="M2 8v9"/><path d="M12 14h10v-2a3 3 0 0 0 -3 -3h-7v5"/></svg></span>
+                    <span class="stream-label jp">ベッドを整える</span>
+                </div>
+            </div>
+        </div>
+
+        <section class="try-tap" id="try" aria-label="タップ体験">
+            <div class="wrap">
+                <div class="try-tap-head reveal">
+                    <p class="label">Try a Tap</p>
+                    <h2 class="jp">タップしてみて。</h2>
+                    <p class="jp">習慣カードの円を押すだけ。<br>完了の感触を、ここで少し体験できます。</p>
+                </div>
+                <div class="tap-board reveal d1" id="tap-board">
+                    <button class="tap-card" type="button" data-habit="stretch" data-done-tone="sky" aria-pressed="false">
+                        <span class="tap-orb" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l1.5 -3"/><path d="M17 20l-1 -5h-5l1 -7"/><path d="M4 10l4 -1l4 -1l4 1.5l4 1.5"/><path d="M10.007 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/></svg>
+                        </span>
+                        <span class="tap-label jp">ストレッチする</span>
+                        <span class="tap-hint">Tap!</span>
+                    </button>
+                    <button class="tap-card" type="button" data-habit="water" data-done-tone="peach" aria-pressed="false">
+                        <span class="tap-orb" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15h10v4a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2v-4"/><path d="M12 9a6 6 0 0 0 -6 -6h-3v2a6 6 0 0 0 6 6h3"/><path d="M12 11a6 6 0 0 1 6 -6h3v1a6 6 0 0 1 -6 6h-3"/><path d="M12 15l0 -6"/></svg>
+                        </span>
+                        <span class="tap-label jp">植物に水やり</span>
+                        <span class="tap-hint">Tap!</span>
+                    </button>
+                    <button class="tap-card" type="button" data-habit="read" data-done-tone="sage" aria-pressed="false">
+                        <span class="tap-orb" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/></svg>
+                        </span>
+                        <span class="tap-label jp">本を1ページ</span>
+                        <span class="tap-hint">Tap!</span>
+                    </button>
+                </div>
+                <p class="try-tap-note jp" id="tap-note" aria-live="polite"></p>
+            </div>
+        </section>
+
+        <section class="features" id="features">
+            <div class="wrap">
+                <p class="label section-label-row reveal">Features</p>
+                <div class="feature-grid">
+                    <article class="feature reveal">
+                        <div class="feature-copy">
+                            <p class="feature-index">01 — Simple</p>
+                            <h3 class="jp">シンプルな習慣管理</h3>
+                            <p class="jp">習慣を登録して、毎日タップするだけ。<br>複雑な設定は不要です。</p>
+                        </div>
+                        <div class="feature-media">
+                            <div class="device"><img src="../assets/min-habit/ui_01_crop.jpg" alt="習慣をタップして完了する画面" loading="lazy"></div>
+                        </div>
+                    </article>
+                    <article class="feature reverse reveal d1">
+                        <div class="feature-copy">
+                            <p class="feature-index">02 — Reflect</p>
+                            <h3 class="jp">週・月で振り返り</h3>
+                            <p class="jp">続けた日が一目でわかる。<br>小さな積み重ねをそのまま残せます。</p>
+                        </div>
+                        <div class="feature-media">
+                            <div class="device"><img src="../assets/min-habit/ui_04_crop.jpg" alt="カレンダーで習慣の積み重ねを見る画面" loading="lazy"></div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="moments" id="highlights">
+            <div class="wrap">
+                <p class="label section-label-row reveal">Highlights</p>
+                <div class="moment-grid">
+                    <article class="moment reveal">
+                        <div class="moment-visual">
+                            <img class="promo crop-widget" src="../assets/min-habit/screen_03.jpg" alt="ホーム画面からワンタップで完了" loading="lazy">
+                        </div>
+                        <div>
+                            <p class="moment-index">01 — Widget</p>
+                            <h3 class="jp">ホームウィジェット</h3>
+                            <p class="jp">ホーム画面から確認・完了。アプリを開く手間も最小限です。</p>
+                        </div>
+                    </article>
+                    <article class="moment reveal d1">
+                        <div class="moment-visual">
+                            <img class="promo crop-rhythm" src="../assets/min-habit/screen_07.jpg" alt="回数や曜日など柔軟な設定画面" loading="lazy">
+                        </div>
+                        <div>
+                            <p class="moment-index">02 — Rhythm</p>
+                            <h3 class="jp">通知と頻度設定</h3>
+                            <p class="jp">毎日・曜日指定・1日おきなど、自分のペースに合わせられます。</p>
+                        </div>
+                    </article>
+                    <article class="moment reveal d2">
+                        <div class="moment-visual">
+                            <img class="promo crop-personal" src="../assets/min-habit/screen_06.jpg" alt="推し画像でカスタムできる習慣カード" loading="lazy">
+                        </div>
+                        <div>
+                            <p class="moment-index">03 — Personal</p>
+                            <h3 class="jp">画像とテーマ</h3>
+                            <p class="jp">お気に入り画像やテーマカラーで、続ける動機を見た目からも支えます。</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+
+        <section class="reviews" id="reviews">
+            <div class="wrap">
+                <div class="reviews-head reveal">
+                    <p class="label">Reviews</p>
+                    <div class="reviews-score">
+                        <strong>4.5</strong>
+                        <span>／ 5（App Store）</span>
+                    </div>
+                </div>
+                <div class="review-grid">
+                    <article class="review reveal">
+                        <p class="review-stars" aria-label="5つ星">
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                        </p>
+                        <h3 class="jp">求めていた全てがここにあった…!</h3>
+                        <p class="jp">苦手だった、決まった時刻の起床・就寝やサプリの習慣化がこのアプリのおかげでできるようになりました！これで買い切りはありがたすぎる！これからもお世話になります！</p>
+                    </article>
+                    <article class="review reveal d1">
+                        <p class="review-stars" aria-label="5つ星">
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                        </p>
+                        <h3 class="jp">とても使いやすいです</h3>
+                        <p class="jp">SNSで話題になっていたので導入してみましたが、とてもシンプルで使い勝手がよく、ウィジェットとしてもよく馴染むのでありがたいです。</p>
+                    </article>
+                    <article class="review reveal d2">
+                        <p class="review-stars" aria-label="5つ星">
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                            <svg class="is-full" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5l2.35 5.72 6.15.54-4.7 4.1 1.4 6-5.2-3.1-5.2 3.1 1.4-6-4.7-4.1 6.15-.54L10 1.5z"/></svg>
+                        </p>
+                        <h3 class="jp">便利！</h3>
+                        <p class="jp">服薬の他にもストレッチなどの習慣を登録できるものを探していました。見た目も可愛いし、ホームのウィジェットも便利でうれしいです。</p>
+                    </article>
+                </div>
+                <p class="reviews-note jp reveal">※ App Store のユーザーレビューより抜粋。</p>
+            </div>
+        </section>
+
+        <section class="final">
+            <div class="final-inner reveal">
+                <img class="final-icon" src="../assets/min_habit_icon.png" alt="">
+                <h2 class="jp">今日からひとつだけ。</h2>
+                <p class="jp">Min Habit で続けやすい習慣を始めましょう。</p>
+                <a class="app-store-badge magnetic" href="https://apps.apple.com/jp/app/min-habit-%E3%82%B7%E3%83%B3%E3%83%97%E3%83%AB%E3%81%AA%E7%BF%92%E6%85%A3%E7%AE%A1%E7%90%86/id6757673148" target="_blank" rel="noopener noreferrer">
+                    <img src="../assets/min-habit/app-store-badge-ja.svg" alt="App Store からダウンロード" width="109" height="40">
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <p class="footer-copy">© 2026 Min Habit / 六日 (Muika)</p>
+            <div class="footer-links">
+                <a href="../">Portfolio</a>
+                <a href="https://lead-cayenne-7c2.notion.site/Min-Habit-2ec6ed4e15a480a5b66cc6b1d56fd028" target="_blank" rel="noopener noreferrer">利用規約</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (() => {
+            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const nav = document.getElementById('nav');
+            const progress = document.getElementById('progress');
+            const heroLayout = document.querySelector('.hero-layout');
+
+            const onScroll = () => {
+                const y = window.scrollY || document.documentElement.scrollTop;
+                nav.classList.toggle('is-scrolled', y > 16);
+                const doc = document.documentElement;
+                const max = doc.scrollHeight - doc.clientHeight;
+                progress.style.width = (max > 0 ? (y / max) * 100 : 0) + '%';
+
+                if (heroLayout && !reduce) {
+                    const fade = Math.min(y / (window.innerHeight * 0.65), 1);
+                    heroLayout.style.opacity = String(1 - fade * 0.8);
+                    heroLayout.style.transform = `translate3d(0, ${fade * -28}px, 0)`;
+                }
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+
+            const habitTrack = document.getElementById('habit-stream-track');
+            if (habitTrack) {
+                habitTrack.innerHTML += habitTrack.innerHTML;
+                if (reduce) {
+                    habitTrack.style.animation = 'none';
+                    habitTrack.style.transform = 'none';
+                }
+            }
+
+            const targets = document.querySelectorAll('.reveal, .feature, .moment');
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach((e) => {
+                        if (!e.isIntersecting) return;
+                        e.target.classList.add('is-in');
+                        io.unobserve(e.target);
+                    });
+                }, { threshold: 0.12, rootMargin: '0px 0px -5% 0px' });
+                targets.forEach((el) => io.observe(el));
+            } else {
+                targets.forEach((el) => el.classList.add('is-in'));
+            }
+
+            const heroVideo = document.getElementById('hero-demo');
+            if (heroVideo) {
+                heroVideo.muted = true;
+                const tryPlay = () => {
+                    const p = heroVideo.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                };
+                if (heroVideo.readyState >= 2) tryPlay();
+                else heroVideo.addEventListener('loadeddata', tryPlay, { once: true });
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) tryPlay();
+                });
+            }
+
+            if (!reduce) {
+                const stage = document.querySelector('[data-stage]');
+                if (stage) {
+                    const layers = [...stage.querySelectorAll('[data-depth]')];
+                    let mx = 0, my = 0, cx = 0, cy = 0;
+                    window.addEventListener('pointermove', (e) => {
+                        const r = stage.getBoundingClientRect();
+                        mx = ((e.clientX - (r.left + r.width / 2)) / r.width) * 2;
+                        my = ((e.clientY - (r.top + r.height / 2)) / r.height) * 2;
+                    }, { passive: true });
+
+                    const tick = () => {
+                        cx += (mx - cx) * 0.07;
+                        cy += (my - cy) * 0.07;
+                        layers.forEach((el) => {
+                            const d = parseFloat(el.dataset.depth || '0.1');
+                            el.style.transform = `translate3d(${cx * d * -40}px, ${cy * d * -28}px, 0)`;
+                        });
+                        requestAnimationFrame(tick);
+                    };
+                    requestAnimationFrame(tick);
+                }
+
+                document.querySelectorAll('.magnetic').forEach((btn) => {
+                    btn.addEventListener('pointermove', (e) => {
+                        const r = btn.getBoundingClientRect();
+                        const x = e.clientX - (r.left + r.width / 2);
+                        const y = e.clientY - (r.top + r.height / 2);
+                        btn.style.transform = `translate(${x * 0.16}px, ${y * 0.2}px)`;
+                    });
+                    btn.addEventListener('pointerleave', () => {
+                        btn.style.transform = '';
+                    });
+                });
+            }
+
+            const tapBoard = document.getElementById('tap-board');
+            const tapNote = document.getElementById('tap-note');
+            if (tapBoard) {
+                const cards = [...tapBoard.querySelectorAll('.tap-card')];
+                const complete = (card, x, y) => {
+                    if (card.classList.contains('is-done')) return;
+                    card.classList.add('is-done', 'is-pop');
+                    card.setAttribute('aria-pressed', 'true');
+                    const hint = card.querySelector('.tap-hint');
+                    if (hint) hint.textContent = 'Completed!';
+
+                    if (!reduce) {
+                        const ripple = document.createElement('span');
+                        ripple.className = 'tap-ripple';
+                        const r = card.getBoundingClientRect();
+                        ripple.style.left = (x - r.left) + 'px';
+                        ripple.style.top = (y - r.top) + 'px';
+                        card.appendChild(ripple);
+                        ripple.addEventListener('animationend', () => ripple.remove());
+                        setTimeout(() => card.classList.remove('is-pop'), 560);
+                    }
+
+                    if (cards.every((c) => c.classList.contains('is-done')) && tapNote) {
+                        tapNote.textContent = 'いい感じ。アプリでも、この感覚で続きます。';
+                        tapNote.classList.add('is-show');
+                    }
+                };
+
+                cards.forEach((card) => {
+                    card.addEventListener('click', (e) => {
+                        complete(card, e.clientX, e.clientY);
+                    });
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
